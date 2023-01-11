@@ -348,7 +348,7 @@ class ffmpeg:
 
         filter = ' ; '.join(filters)
         command += '-filter_complex "'+filter+'" '
-        command += '-map [vid'+str(vinc-1)+'] -map [a] -crf 18 -c:v libx264 '
+        command += '-map [vid'+str(vinc-1)+'] -map [a] -crf 18 -c:v libx264 -color_trc 1 -color_primaries 1 '
         command += '"'+self.renderLocation+object['video']['filename']+'"'
         
         util.ensureFolder(self.renderLocation)

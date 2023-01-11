@@ -1,5 +1,6 @@
 import math
 import subprocess
+import util
 
 from util import constants
 
@@ -9,14 +10,9 @@ curVersion = constants.VERSION
 incVersion = round(constants.VERSION + 0.1, 1)
 jmpVersion = float(math.floor(constants.VERSION) + 1)
 
-while True:
-    print(f'The current version number is {curVersion}.  The next incremental version would be {incVersion}.  Or would you like to jump to to the next release version {jmpVersion}?')
-    user_input = input('Y/N: ')
+print(f'The current version number is {curVersion}.  The next incremental version would be {incVersion}.  Or would you like to jump to to the next release version {jmpVersion}?')
+user_input = util.query('Y/N', '(y/N)? ', default='N')
 
-    if user_input.lower() in ('yes', 'no', 'y', 'n'):
-        break
-    else:
-        print('Please just answer with either Yes or No')
 
 if user_input.casefold().startswith('y'):
     version = jmpVersion
@@ -46,3 +42,22 @@ with open('pyproject.toml', 'w') as file:
     file.writelines(content)
 
 # Git Update
+user_input = util.query('Y/N', 'Would you like to commit changes to git (Y/n)? ', default='Y')
+if user_input.casefold().startswith('y'):
+    m = util.query('Required', 'Enter a description for this commit: ')
+
+    # Add
+    command = 'git add .'
+    process = subprocess.Popen(command, shell=True, stdin=subprocess.PIPE,  stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
+    for line in process.stdout:
+        print(line, end='')
+
+    command = f'git commit -m "{m}"'
+    process = subprocess.Popen(command, shell=True, stdin=subprocess.PIPE,  stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
+    for line in process.stdout:
+        print(line, end='')
+
+    command = 'git push'
+    process = subprocess.Popen(command, shell=True, stdin=subprocess.PIPE,  stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
+    for line in process.stdout:
+        print(line, end='')
