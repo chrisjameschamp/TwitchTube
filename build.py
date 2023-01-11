@@ -57,7 +57,7 @@ if user_input.casefold().startswith('y'):
     for line in process.stdout:
         print(line, end='')
 
-    command = 'git push'
+    command = 'git push origin main'
     process = subprocess.Popen(command, shell=True, stdin=subprocess.PIPE,  stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
     for line in process.stdout:
         print(line, end='')
