@@ -36,7 +36,7 @@ with open('pyproject.toml', 'r') as file:
 
 for i, line in enumerate(content):
     if line.casefold().startswith('version'):
-        content[i] = f'version = "{version}".0\n'
+        content[i] = f'version = "{version}.0"\n'
 
 with open('pyproject.toml', 'w') as file:
     file.writelines(content)
