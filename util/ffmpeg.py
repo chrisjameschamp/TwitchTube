@@ -312,20 +312,25 @@ class ffmpeg:
         filters.append('[aud'+str(ainc-1)+'] adelay=delays='+str(offset)+'s:all=1,aresample=async=1 [aud'+str(ainc)+']')
 
         # Combine Everything
+        colorspace = ', colorspace=all=bt709:format=yuv444p10:iall=bt709'
         if object['options']['highlight']:
-            filters.append('[vid'+str(vinc-1)+'] [highlight_vid] overlay=enable=gte(t\,0):eof_action=pass [vid'+str(vinc)+']')
+            filters.append('[vid'+str(vinc-1)+'] [highlight_vid] overlay=enable=gte(t\,0):eof_action=pass'+colorspace+' [vid'+str(vinc)+']')
+            colorspace = ''
             vinc += 1
         
         if object['options']['intro']:
-            filters.append('[vid'+str(vinc-1)+'] [intro_vid] overlay=enable=gte(t\,0):eof_action=pass [vid'+str(vinc)+']')
+            filters.append('[vid'+str(vinc-1)+'] [intro_vid] overlay=enable=gte(t\,0):eof_action=pass'+colorspace+' [vid'+str(vinc)+']')
+            colorspace = ''
             vinc += 1
 
         if object['options']['overlay']:
-            filters.append('[vid'+str(vinc-1)+'] [overlay_vid] overlay=enable=gte(t\,0):eof_action=pass [vid'+str(vinc)+']')
+            filters.append('[vid'+str(vinc-1)+'] [overlay_vid] overlay=enable=gte(t\,0):eof_action=pass'+colorspace+' [vid'+str(vinc)+']')
+            colorspace = ''
             vinc += 1
 
         if object['options']['endcard']:
-            filters.append('[vid'+str(vinc-1)+'] [endcard_vid] overlay=enable=gte(t\,0):eof_action=repeat [vid'+str(vinc)+']')
+            filters.append('[vid'+str(vinc-1)+'] [endcard_vid] overlay=enable=gte(t\,0):eof_action=repeat'+colorspace+' [vid'+str(vinc)+']')
+            colorspace = ''
             vinc += 1
 
         # Audio
@@ -348,7 +353,7 @@ class ffmpeg:
 
         filter = ' ; '.join(filters)
         command += '-filter_complex "'+filter+'" '
-        command += '-map [vid'+str(vinc-1)+'] -map [a] -crf 18 -c:v libx264 -color_trc 1 -color_primaries 1 '
+        command += '-map [vid'+str(vinc-1)+'] -map [a] -crf 18 -c:v libx264 -color_trc bt709 -color_primaries bt709 -colorspace bt709 '
         command += '"'+self.renderLocation+object['video']['filename']+'"'
         
         util.ensureFolder(self.renderLocation)
@@ -363,7 +368,7 @@ class ffmpeg:
 
         process = subprocess.Popen(command, shell=True, stdin=subprocess.PIPE,  stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
         for line in process.stdout:
-            #print(line)
+            print(line)
             if line.lstrip().startswith('Stream #'):
                 info = line.split(', ')
                 for item in info:
