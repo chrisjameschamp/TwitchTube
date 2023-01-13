@@ -225,7 +225,7 @@ def setOptions(video, youtube, yt_class):
     if youtube:
         youtube_category = yt_class.getCategories()
 
-    return {'title': title, 'shortDesc': shortDesc, 'description': description, 'keywords': keywords, 'category': youtube_category, 'privacy': privacy}
+    return {'title': title, 'shortDesc': shortDesc, 'description': description, 'keywords': keywords, 'yt_category': youtube_category, 'privacy': privacy}
 
 def createFile(file):
     try:

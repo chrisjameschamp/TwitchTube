@@ -30,7 +30,7 @@ class twitchTube:
                         self.renderVideo()
                 elif self.object['youtube'] is None:
                     self.youtubeOptions()
-                elif not self.object['metadata']:
+                elif not self.object['meta']:
                     self.metadata()
                 elif not self.object['yt_uploaded']:
                     if self.ffmpeg.verifyFile(self.object['video']['filename']):
@@ -109,9 +109,9 @@ class twitchTube:
         self.uploadVideo()
 
     def uploadVideo(self):
-        ##if self.youtube.upload(self.object):
-        ##    self.object['yt_uploaded'] = True
-        ##    util.saveFile('progress', self.object)
+        if self.youtube.upload(self.object):
+            self.object['yt_uploaded'] = True
+            util.saveFile('progress', self.object)
         self.cleanUp()
 
     def cleanUp(self):

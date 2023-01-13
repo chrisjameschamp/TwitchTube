@@ -162,29 +162,29 @@ class youtube:
     def initialize_upload(self, object):
         youtube = self.get_authenticated_service()
         description = ''
-        if object['youtube']['shortDesc']:
-            description += object['youtube']['shortDesc']
-            if object['youtube']['description']:
+        if object['meta']['shortDesc']:
+            description += object['meta']['shortDesc']
+            if object['meta']['description']:
                 description += '\n\n▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n\n'
                 
-        if object['youtube']['description']:
-            description += object['youtube']['description']
-            if object['youtube']['keywords']:
+        if object['meta']['description']:
+            description += object['meta']['description']
+            if object['meta']['keywords']:
                 description += '\n\n▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n\n'
 
-        if object['youtube']['keywords']:
-            for keyword in object['youtube']['keywords']:
+        if object['meta']['keywords']:
+            for keyword in object['meta']['keywords']:
                 description += '#'+keyword+' '
 
         body=dict(
             snippet=dict(
-                title=object['youtube']['title'],
+                title=object['meta']['title'],
                 description=description,
-                tags=object['youtube']['keywords'],
-                categoryId=str(object['youtube']['category'])
+                tags=object['meta']['keywords'],
+                categoryId=str(object['meta']['yt_category'])
             ),
             status=dict(
-                privacyStatus=object['youtube']['privacy']
+                privacyStatus=object['meta']['privacy']
             )
         )
 
