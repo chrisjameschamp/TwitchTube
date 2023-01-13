@@ -2,10 +2,13 @@ import os
 
 from appdirs import *
 
-VERSION = 0.5
+VERSION = 0.6
 
 # App Data Folder
 APPDATA_FOLDER = user_data_dir('TwitchTube', 'ChrisJamesChamp')
+
+# Preferences
+PREFS_FILE = 'preferences'
 
 # Twitch
 TWITCH_CREDS_FILE = 'twitch_credentials'

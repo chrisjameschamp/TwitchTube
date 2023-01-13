@@ -348,7 +348,7 @@ class ffmpeg:
         if object['options']['overlay']:
             mixer += '[overlay_aud]'
             ainput += 1
-        mixer += 'amix=inputs='+str(ainput)+' [a]'
+        mixer += 'amix=inputs='+str(ainput)+':normalize=0 [a]'
         filters.append(mixer)
 
         filter = ' ; '.join(filters)
@@ -368,7 +368,7 @@ class ffmpeg:
 
         process = subprocess.Popen(command, shell=True, stdin=subprocess.PIPE,  stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
         for line in process.stdout:
-            print(line)
+            #print(line)
             if line.lstrip().startswith('Stream #'):
                 info = line.split(', ')
                 for item in info:

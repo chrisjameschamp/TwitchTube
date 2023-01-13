@@ -28,9 +28,11 @@ class twitchTube:
                         self.qcVideo()
                     else: 
                         self.renderVideo()
-                elif not self.object['youtube']:
+                elif self.object['youtube'] is None:
                     self.youtubeOptions()
-                elif not self.object['uploaded']:
+                elif not self.object['metadata']:
+                    self.metadata()
+                elif not self.object['yt_uploaded']:
                     if self.ffmpeg.verifyFile(self.object['video']['filename']):
                         self.uploadVideo()
                     else:
@@ -72,13 +74,44 @@ class twitchTube:
             self.chooseVideo()
 
     def youtubeOptions(self):
-        self.object['youtube'] = self.youtube.setOptions(self.object['video'])
+        prefs = util.getFile(constants.PREFS_FILE)
+
+        if prefs is not None and 'youtube' in prefs and prefs['youtube']:
+            user_input = util.query('Y/N', 'Would you like to upload to youtube again (Y/n)? ', default='Y', prePrint='Your current preferences are to upload to Youtube.')
+            if user_input.casefold().startswith('y'):
+                prefs = {'youtube': True}
+            else:
+                prefs = {'youtube': False}
+        elif prefs is not None and 'youtube' in prefs:
+            user_input = util.query('Y/N', 'Would you like to upload to youtube this time(y/N)? ', default='N', prePrint='Your current preferences are to NOT upload to Youtube.')
+            if user_input.casefold().startswith('y'):
+                prefs = {'youtube': True}
+            else:
+                prefs = {'youtube': False}
+        else:
+            user_input = util.query('Y/N', 'Would you like to upload the resulting video to Youtube (Y/n)? ', default='Y')
+            if user_input.casefold().startswith('y'):
+                prefs = {'youtube': True}
+            else:
+                prefs = {'youtube': False}
+        util.saveFile(constants.PREFS_FILE, prefs)
+
+        if prefs['youtube']:
+            self.object['youtube'] = True
+            self.metadata()
+        else:
+            self.object['youtube'] = False
+            self.cleanUp()
+
+    def metadata(self):
+        self.object['meta'] = util.setOptions(self.object['video'], self.object['youtube'], self.youtube)
         util.saveFile('progress', self.object)
         self.uploadVideo()
 
     def uploadVideo(self):
-        if self.youtube.upload(self.object):
-            pass
+        ##if self.youtube.upload(self.object):
+        ##    self.object['yt_uploaded'] = True
+        ##    util.saveFile('progress', self.object)
         self.cleanUp()
 
     def cleanUp(self):
@@ -95,7 +128,7 @@ class twitchTube:
             util.closeTT()
 
     def objectReset(self):
-        self.object = {'video': {}, 'options': {}, 'youtube': {}, 'rendered': False, 'qc': False, 'uploaded': False}
+        self.object = {'video': {}, 'options': {}, 'meta': {}, 'youtube': None, 'rendered': False, 'qc': False, 'yt_uploaded': False}
 
 if __name__ == '__main__':
     twitchTube()

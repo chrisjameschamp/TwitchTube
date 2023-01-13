@@ -1,9 +1,11 @@
 import json
 import os
 import re
+import subprocess
 import tkinter
 import tqdm
 import urllib.parse
+import util
 
 from tkinter import filedialog
 from util import constants
@@ -176,3 +178,71 @@ def isValidTimeFormat(s):
     if match:
         return True
     return False
+
+def setOptions(video, youtube, yt_class):
+    title = ''
+    shortDesc = ''
+    description = ''
+    keywords = []
+    youtube_category = ''
+    privacy = 'private'
+    user_input = util.query('Y/N', 'Do you wish to keep that title (Y/n)? ', default='Y', prePrint='The title of this video from Twitch is "'+video['title']+'"')
+    if user_input.casefold().startswith('y'):
+        title = video['title']
+    else:
+        user_input = util.query('Required', 'What title would you like to give this video? ')
+        title = user_input
+
+    shortDesc = util.query('Text', 'Enter a breif description for this specific video: ')
+
+    user_input = util.query('Y/N', 'Do you want to include a longer description below the breif description (Y/n)? ', default='Y')
+    if user_input.casefold().startswith('y'):
+        print('Checking existing saved description...')
+        file = constants.APPDATA_FOLDER+'/desc.txt'
+        if os.path.exists(file):
+            user_input = util.query('Options', 'You have a long description on file, would you like to use it, or view / edit it (USE/edit)? ', default='Use', options=['use', 'edit', 'view'], errorMsg='Please just answer with either use, edit, or view')
+            if user_input.casefold().startswith('use'):
+                description = getDesc(file)
+            else:
+                subprocess.call(['open', '-e', file])
+                user_input = util.query('Y/N', 'Are you happy with the long desciprtion (Y/n)? ', default='Y')
+                user_input = util.query('Y/N', 'Confirm that you saved the file (Y/n)? ', default='Y', prePrint='Make sure to save the file and close it before continueing')
+                description = getDesc(file)
+        else:
+            print('No saved description\n')
+            if createFile(file):
+                subprocess.call(['open', '-e', file])
+                user_input = util.query('Y/N', 'Are you happy with the long desciprtion (Y/n)? ', default='Y')
+                user_input = util.query('Y/N', 'Confirm that you saved the file (Y/n)? ', default='Y', prePrint='Make sure to save the file and close it before continueing')
+                description = getDesc(file)
+            else:
+                print('Warning: Could not create the description file\nProceeding as no long description will be included\n')
+
+    user_input = util.query('Text', 'Keywords: ', prePrint='Enter keywords for this video, seperate them by , otherwise your going to have a whole mess of issues')
+    if user_input:
+        keywords = list(map(str.strip, user_input.split(',')))
+
+    if youtube:
+        youtube_category = yt_class.getCategories()
+
+    return {'title': title, 'shortDesc': shortDesc, 'description': description, 'keywords': keywords, 'category': youtube_category, 'privacy': privacy}
+
+def createFile(file):
+    try:
+        with open(file, 'w') as outfile:
+            outfile.write('')
+        print('Desc file created\n')
+        return True
+    except:
+        return False
+
+def getDesc(file):
+    print('Getting saved description...')
+    try:
+        with open(file) as infile:
+            data = infile.read()
+        print('Loaded descrption\n')
+        return data
+    except:
+        print('Could not get the saved description\n')
+        return ''

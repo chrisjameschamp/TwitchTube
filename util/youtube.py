@@ -72,15 +72,10 @@ VALID_PRIVACY_STATUSES = ("public", "private", "unlisted")
 
 class youtube:
     def __init__(self):
-        self.title = ''
-        self.shortDesc = ''
-        self.description = ''
-        self.keywords = []
-        self.category = ''
-        self.privacy = 'private'
         self.creds = {}
         self.apiKey = None
         self.uploadLocation = constants.APPDATA_FOLDER+'/tmp/'
+
         self.verifyCredentials()
         self.youtube = self.get_authenticated_service()
 
@@ -116,43 +111,7 @@ class youtube:
 
         util.saveFile(constants.YOUTUBE_API_FILE, self.apiKey)
 
-    def setOptions(self, video):
-        user_input = util.query('Y/N', 'Do you wish to keep that title (Y/n)? ', default='Y', prePrint='The title of this video from Twitch is "'+video['title']+'"')
-        if user_input.casefold().startswith('y'):
-            self.title = video['title']
-        else:
-            user_input = util.query('Required', 'What title would you like to give this video? ')
-            self.title = user_input
-
-        self.shortDesc = util.query('Text', 'Enter a breif description for this specific video: ')
-
-        user_input = util.query('Y/N', 'Do you want to include a longer description below the breif description (Y/n)? ', default='Y')
-        if user_input.casefold().startswith('y'):
-            print('Checking existing saved description...')
-            file = constants.APPDATA_FOLDER+'/desc.txt'
-            if os.path.exists(file):
-                user_input = util.query('Options', 'You have a long description on file, would you like to use it, or view / edit it (USE/edit)? ', default='Use', options=['use', 'edit', 'view'], errorMsg='Please just answer with either use, edit, or view')
-                if user_input.casefold().startswith('use'):
-                    self.description = self.getDesc(file)
-                else:
-                    subprocess.call(['open', '-e', file])
-                    user_input = util.query('Y/N', 'Are you happy with the long desciprtion (Y/n)? ', default='Y')
-                    user_input = util.query('Y/N', 'Confirm that you saved the file (Y/n)? ', default='Y', prePrint='Make sure to save the file and close it before continueing')
-                    self.description = self.getDesc(file)
-            else:
-                print('No saved description\n')
-                if self.createFile(file):
-                    subprocess.call(['open', '-e', file])
-                    user_input = util.query('Y/N', 'Are you happy with the long desciprtion (Y/n)? ', default='Y')
-                    user_input = util.query('Y/N', 'Confirm that you saved the file (Y/n)? ', default='Y', prePrint='Make sure to save the file and close it before continueing')
-                    self.description = self.getDesc(file)
-                else:
-                    print('Warning: Could not create the description file\nProceeding as no long description will be included\n')
-
-        user_input = util.query('Text', 'Keywords: ', prePrint='Enter keywords for this video, seperate them by , otherwise your going to have a whole mess of issues')
-        if user_input:
-            self.keywords = list(map(str.strip, user_input.split(',')))
-        
+    def getCategories(self):
         url = constants.YOUTUBE_CATEGORIES
         params = {
             'part': 'snippet',
@@ -170,30 +129,7 @@ class youtube:
             print(str(i)+') '+item['snippet']['title'])
         user_input = util.query('Numeric', 'Category Number: ', min=1, max=count)
 
-        self.category = categories[int(user_input)-1]['id']
-
-        return {'title': self.title, 'shortDesc': self.shortDesc, 'description': self.description, 'keywords': self.keywords, 'category': self.category, 'privacy': self.privacy}
-            
-
-    def createFile(self, file):
-        try:
-            with open(file, 'w') as outfile:
-                outfile.write('')
-            print('Desc file created\n')
-            return True
-        except:
-            return False
-
-    def getDesc(self, file):
-        print('Getting saved description...')
-        try:
-            with open(file) as infile:
-                data = infile.read()
-            print('Loaded descrption\n')
-            return data
-        except:
-            print('Could not get the saved description\n')
-            return ''
+        return categories[int(user_input)-1]['id']
 
     def get_authenticated_service(self):
         print('Confirming Youtube Credentials...')
