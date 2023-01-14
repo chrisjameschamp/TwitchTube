@@ -10,3 +10,6 @@
   ![GitHub last commit](https://img.shields.io/github/last-commit/chrisjameschamp/TwitchTube?style=flat-square)
 
 </div>
+<div align="center">
+  <img width="800" alt="Header" src="https://user-images.githubusercontent.com/38870317/212498051-3848fc72-47ad-4eac-96b8-108d0925d954.png">
+</div>
