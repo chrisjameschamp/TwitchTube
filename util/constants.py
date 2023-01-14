@@ -2,7 +2,7 @@ import os
 
 from appdirs import *
 
-VERSION = 1.0
+VERSION = 1.1
 
 # App Data Folder
 APPDATA_FOLDER = user_data_dir('TwitchTube', 'ChrisJamesChamp')

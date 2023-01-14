@@ -83,8 +83,7 @@ class twitch:
 
         for video in videos['data']:
             if video['type'] == 'highlight':
-                dt = datetime.strptime(video['created_at'], "%Y-%m-%dT%H:%M:%SZ")
-                highlights.append({'title': video['title'], 'url': video['url'], 'duration': functions.seconds(video['duration']), 'filename': video['user_login']+'_'+str(int(dt.timestamp()))+'.mp4'})
+                highlights.append({'title': video['title'], 'url': video['url'], 'duration': functions.seconds(video['duration']), 'filename': video['user_login']+'_'+video['id']+'.mp4'})
 
         if not highlights:
             print('There are no recent highlights available for '+self.channel+'\n')
@@ -107,7 +106,7 @@ class twitch:
 
                 if 'data' in video and video['data']:
                     video = video['data'][0]
-                    video = {'title': video['title'], 'url': video['url'], 'duration': functions.seconds(video['duration']), 'filename': video['user_login']+'_'+str(int(dt.timestamp()))+'.mp4'}
+                    video = {'title': video['title'], 'url': video['url'], 'duration': functions.seconds(video['duration']), 'filename': video['user_login']+'_'+video['id']+'.mp4'}
                     print('We found a video that matches\n'+video['title'])
                     user_input = dialogue.query('Y/N', 'Is that the video you were looking for (Y/n)? ', default='Y')
                     if user_input.casefold().startswith('y'):
