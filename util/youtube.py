@@ -223,10 +223,14 @@ class youtube:
                 if response is not None:
                     if 'id' in response:
                         pbar.close()
-                        print("Video id '%s' was successfully uploaded." % response['id'])
+                        print('\nVideo id "'+response['id']+'" was successfully uploaded')
+                        print('Youtube video link: https://www.youtube.com/watch?v='+response['id'])
+                        print('Youtube Studio link: https://studio.youtube.com/video/'+response['id']+'/edit\n')
+                        return True
                     else:
                         pbar.close()
-                        exit("The upload failed with an unexpected response: %s" % response)
+                        print('\nThe upload failed with an unexpected response: '+response+'\n')
+                        return False
             except HttpError as e:
                 pbar.close()
                 if e.resp.status in RETRIABLE_STATUS_CODES:
@@ -235,15 +239,15 @@ class youtube:
                 else:
                     raise
             except RETRIABLE_EXCEPTIONS as e:
-                pbar.close()
                 error = "A retriable error occurred: %s" % e
 
             if error is not None:
-                pbar.close()
                 print(error)
                 retry += 1
                 if retry > MAX_RETRIES:
-                    exit("No longer attempting to retry.")
+                    pbar.close()
+                    print("No longer attempting to retry.")
+                    return False
 
                 max_sleep = 2 ** retry
                 sleep_seconds = random.random() * max_sleep

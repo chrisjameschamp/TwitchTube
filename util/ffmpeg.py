@@ -48,10 +48,10 @@ class ffmpeg:
                     trim = {'start': start, 'end': end}
         else:
             user_input = dialogue.query('Y/N', 'Would you like to change the in / out points of the '+channel+' video (y/N)? ', default='N')
-        if user_input.casefold().startswith('y'):
-            start = dialogue.query('Time', 'Enter the time into the video where you want it to start (12m4s): ')
-            end = dialogue.query('Time', 'Enter the time into the video where you want it to end (1m15s): ')
-            trim = {'start': start, 'end': end}
+            if user_input.casefold().startswith('y'):
+                start = dialogue.query('Time', 'Enter the time into the video where you want it to start (12m4s): ')
+                end = dialogue.query('Time', 'Enter the time into the video where you want it to end (1m15s): ')
+                trim = {'start': start, 'end': end}
         
         introVid = None
         if options and 'intro' in options and options['intro']:

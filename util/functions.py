@@ -255,7 +255,6 @@ def prefs():
         prefs = {}
 
     prefs = settings('youtube', prefs)
-    prefs = settings('facebook', prefs)
 
     saveFile(constants.PREFS_FILE, prefs)
 
@@ -270,15 +269,15 @@ def settings(channel, prefs):
                 if prefs[channel]['unique']:
                     user_input = dialogue.query('Y/N', 'Would you like to continue to upload a unique version to '+channel+' (Y/n)? ', default='Y', prePrint='Your current preference is to upload a unique version to '+channel+'.')
                     if user_input.casefold().startswith('y'):
-                        prefs[channel]['enable'] = True
+                        prefs[channel]['unique'] = True
                     else:
-                        prefs[channel]['enable'] = False
+                        prefs[channel]['unique'] = False
                 else:
                     user_input = dialogue.query('Y/N', 'Would you like to continue to NOT upload a unique version to '+channel+' (Y/n)? ', default='Y', prePrint='Your current preference is to NOT upload a unique version to '+channel+'.')
                     if user_input.casefold().startswith('y'):
-                        prefs[channel]['enable'] = False
+                        prefs[channel]['unique'] = False
                     else:
-                        prefs[channel]['enable'] = True
+                        prefs[channel]['unique'] = True
             else:
                 prefs[channel]['enable'] = False
                 prefs[channel]['unique'] = False
@@ -295,9 +294,9 @@ def settings(channel, prefs):
                 else:
                     user_input = dialogue.query('Y/N', 'Would you like to continue to NOT upload a unique version to '+channel+' (Y/n)? ', default='Y', prePrint='Your current preference is to NOT upload a unique version to '+channel)
                     if user_input.casefold().startswith('y'):
-                        prefs[channel]['enable'] = False
+                        prefs[channel]['unique'] = False
                     else:
-                        prefs[channel]['enable'] = True
+                        prefs[channel]['unique'] = True
             else:
                 prefs[channel]['enable'] = False
                 prefs[channel]['unique'] = False

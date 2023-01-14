@@ -11,6 +11,8 @@ __pycache__/
 pyu-data/
 *.pyu
 build/
+build.py
+docs/
 develop-eggs/
 dist/
 downloads/
