@@ -2,10 +2,11 @@ import os
 
 from appdirs import *
 
-VERSION = 0.7
+VERSION = 0.8
 
 # App Data Folder
 APPDATA_FOLDER = user_data_dir('TwitchTube', 'ChrisJamesChamp')
+RENDER_LOCATION = APPDATA_FOLDER+'/tmp/'
 
 # Preferences
 PREFS_FILE = 'preferences'

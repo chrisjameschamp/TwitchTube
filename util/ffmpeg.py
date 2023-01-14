@@ -1,203 +1,182 @@
 import math
 import os
+import platform
 import re
 import tqdm
 import subprocess
-import util
 
-from util import constants
+from util import constants, functions, dialogue
 
 class ffmpeg:
     def __init__(self):
-        self.introVid = None
-        self.overlayVid = None
-        self.endVid = None
-        self.highlight = None
-        self.trim = None
-        util.ensureFolder('tmp')
-        self.renderLocation = constants.APPDATA_FOLDER+'/tmp/'
+        functions.ensureFolder('tmp')
 
-    def setOptions(self, video):
-        user_input = util.query('Y/N', 'Would you like to include a highlight at the start of the video (y/N)? ', default='N')
-        if user_input.casefold().startswith('y'):
-            start = util.query('Time', 'Enter the time into the video where you want the highlight to start (12m4s): ')
-            end = util.query('Time', 'Enter the time into the video where you want the highlight to stop (1m15s): ')
-            self.highlight = {'start': start, 'end': end}
+    def setOptions(self, channel='generic', options=None):
+        if channel!='generic':
+            print('Configuring video file for '+channel+'...\n')
+        else:
+            print('First we will configure the generic video file\nWe will configure the unique versions afterwards\n')
 
-        user_input = util.query('Y/N', 'Would you like to change the in / out points of the video (y/N)? ', default='N')
+        highlight = None
+        if options and 'highlight' in options and options['highlight']:
+            user_input = dialogue.query('Y/N', 'Would you like to use the same highlight (Y/n)? ', default='Y', prePrint='The generic version uses a highlight at the beginning starting at '+functions.time(options['highlight']['start'])+' and ending at '+functions.time(options['highlight']['end']))
+            if user_input.casefold().startswith('y'):
+                highlight = options['highlight']
+            else:
+                user_input = dialogue.query('Y/N', 'Would you like to include a highlight at the start of the '+channel+' video (y/N)? ', default='N')
+                if user_input.casefold().startswith('y'):
+                    start = dialogue.query('Time', 'Enter the time into the video where you want the highlight to start (12m4s): ')
+                    end = dialogue.query('Time', 'Enter the time into the video where you want the highlight to stop (1m15s): ')
+                    highlight = {'start': start, 'end': end}
+        else:
+            user_input = dialogue.query('Y/N', 'Would you like to include a highlight at the start of the '+channel+' video (y/N)? ', default='N')
+            if user_input.casefold().startswith('y'):
+                start = dialogue.query('Time', 'Enter the time into the video where you want the highlight to start (12m4s): ')
+                end = dialogue.query('Time', 'Enter the time into the video where you want the highlight to stop (1m15s): ')
+                highlight = {'start': start, 'end': end}
+
+        trim = None
+        if options and 'trim' in options and options['trim']:
+            user_input = dialogue.query('Y/N', 'Would you like to trim the same amount (Y/n)? ', default='Y', prePrint='The generic version trims the length from '+functions.time(options['trim']['start'])+' to '+functions.time(options['trim']['end']))
+            if user_input.casefold().startswith('y'):
+                trim = options['trim']
+            else:
+                user_input = dialogue.query('Y/N', 'Would you like to change the in / out points of the '+channel+' video (y/N)? ', default='N')
+                if user_input.casefold().startswith('y'):
+                    start = dialogue.query('Time', 'Enter the time into the video where you want it to start (12m4s): ')
+                    end = dialogue.query('Time', 'Enter the time into the video where you want it to end (1m15s): ')
+                    trim = {'start': start, 'end': end}
+        else:
+            user_input = dialogue.query('Y/N', 'Would you like to change the in / out points of the '+channel+' video (y/N)? ', default='N')
         if user_input.casefold().startswith('y'):
-            start = util.query('Time', 'Enter the time into the video where you want it to start (12m4s): ')
-            end = util.query('Time', 'Enter the time into the video where you want it to end (1m15s): ')
-            self.trim = {'start': start, 'end': end}
+            start = dialogue.query('Time', 'Enter the time into the video where you want it to start (12m4s): ')
+            end = dialogue.query('Time', 'Enter the time into the video where you want it to end (1m15s): ')
+            trim = {'start': start, 'end': end}
         
-        user_input = util.query('Y/N', 'Would you like to include an intro video at the beginning (Y/n)? ', default='Y')
-        if user_input.casefold().startswith('y'):
-            self.introVid = util.getFile('introVid')
-            if self.introVid:
-                user_input = util.query('Y/N', 'Would you like to reuse this intro file (Y/n)? ', default='Y', prePrint='There is an intro video on file. "'+self.introVid['file']+'" with a defined length of '+self.introVid['length']+'s and an offset of '+self.introVid['offset']+'s')
-                if user_input.casefold().startswith('n'):
-                    self.deleteIntroVid(self.introVid)
-                    self.selectIntroVid()
+        introVid = None
+        if options and 'intro' in options and options['intro']:
+            user_input = dialogue.query('Y/N', 'Would you like to use the same one (Y/n)? ', default='Y', prePrint='The generic version uses an intro video at the beginning')
+            if user_input.casefold().startswith('y'):
+                introVid = options['intro']
             else:
-                self.selectIntroVid()
+                user_input = dialogue.query('Y/N', 'Would you like to include an intro video at the beginning of the '+channel+' video (Y/n)? ', default='Y')
+                if user_input.casefold().startswith('y'):
+                    introVid = self.getVid(channel, 'intro')
         else:
-            existing = util.getFile('introVid')
-            if existing:
-                self.deleteIntroVid(existing)
+            user_input = dialogue.query('Y/N', 'Would you like to include an intro video at the beginning of the '+channel+' video (Y/n)? ', default='Y')
+            if user_input.casefold().startswith('y'):
+                introVid = self.getVid(channel, 'intro')
 
-        user_input = util.query('Y/N', 'Would you like to include a CTA / Subscribe overlay (Y/n)? ', default='Y')
-        if user_input.casefold().startswith('y'):
-            self.overlayVid = util.getFile('overlayVid')
-            if self.overlayVid:
-                user_input = util.query('Y/N', 'Would you like to reuse this overlay file (Y/n)? ', default='Y', prePrint='There is an overlay video on file. "'+self.overlayVid['file'])
-                if user_input.casefold().startswith('n'):
-                    self.deleteOverlayVid(self.overlayVid)
-                    self.selectOverlayVid()
+        overlayVid = None
+        if options and 'overlay' in options and options['overlay']:
+            user_input = dialogue.query('Y/N', 'Would you like to use the same one (Y/n)? ', default='Y', prePrint='The generic version uses a CTA / Subscribe overlay')
+            if user_input.casefold().startswith('y'):
+                overlayVid = options['overlay']
+            else:
+                user_input = dialogue.query('Y/N', 'Would you like to include a CTA / Subscribe overlay in the '+channel+' video (Y/n)? ', default='Y')
+                if user_input.casefold().startswith('y'):
+                    overlayVid = self.getVid(channel, 'overlay')
+        else:
+            user_input = dialogue.query('Y/N', 'Would you like to include a CTA / Subscribe overlay in the '+channel+' video (Y/n)? ', default='Y')
+            if user_input.casefold().startswith('y'):
+                overlayVid = self.getVid(channel, 'overlay')
+
+        endVid = None
+        if options and 'endcard' in options and options['endcard']:
+            user_input = dialogue.query('Y/N', 'Would you like to use the same one (Y/n)? ', default='Y', prePrint='The generic version uses an Endcard')
+            if user_input.casefold().startswith('y'):
+                endVid = options['endcard']
+            else:
+                user_input = dialogue.query('Y/N', 'Would you like to include an endcard in the '+channel+' video (Y/n)? ', default='Y')
+                if user_input.casefold().startswith('y'):
+                    endVid = self.getVid(channel, 'end')
+        else:
+            user_input = dialogue.query('Y/N', 'Would you like to include an endcard in the '+channel+' video (Y/n)? ', default='Y')
+            if user_input.casefold().startswith('y'):
+                endVid = self.getVid(channel, 'end')
+
+        return {'intro': introVid, 'overlay': overlayVid, 'endcard': endVid, 'highlight': highlight, 'trim': trim}
+
+    def getVid(self, channel, type):
+        vid = functions.getFile(channel+'/'+type+'Vid')
+        if vid:
+            if type=='intro':
+                user_input = dialogue.query('Y/N', 'Would you like to reuse this '+type+' file (Y/n)? ', default='Y', prePrint='There is an '+type+' video on file. "'+vid['file']+'" with a defined length of '+vid['length']+'s and an offset of '+vid['offset']+'s')
+            elif type=='end':
+                user_input = dialogue.query('Y/N', 'Would you like to reuse this '+type+' file (Y/n)? ', default='Y', prePrint='There is an '+type+' video on file. "'+vid['file']+'" with an offset of '+vid['offset']+'s')
+            elif type=='overlay':
+                user_input = dialogue.query('Y/N', 'Would you like to reuse this '+type+' file (Y/n)? ', default='Y', prePrint='There is an '+type+' video on file. "'+vid['file']+'"')
+            else:
+                return False
+
+            if user_input.casefold().startswith('n'):
+                print('Deleting existing '+channel+' '+type+' video...')
+                try:
+                    os.remove(constants.APPDATA_FOLDER+'/'+channel+'/vid/'+vid['file'])
+                except:
+                    print('Warning: Could not delete existing '+channel+' '+type+' video...')
+                print('Deleting '+channel+' '+type+' video settings...')
+                try:
+                    os.remove(constants.APPDATA_FOLDER+'/'+channel+'/'+type+'Vid.json')
+                except:
+                    print('Warning: Could not delete '+channel+' '+type+' video settings...')
+                vid = None
+                print('')
+            else:
+                return vid
+
+        print('Please select your video file...')
+        file_path = functions.selectVideoFile()
+        if file_path:
+            print('Selected File: '+file_path+'\n')
+            file_name = os.path.split(file_path)[1]
+            if not functions.copy(file_path, constants.APPDATA_FOLDER+'/'+channel+'/vid/'+file_name):
+                print('Warning: Selected file could not be copied\nProceeding as no '+type+' video will be included\n')
+                return False
+            else:
+                if type=='intro':
+                    vid = {'file': file_name, 'length': 0, 'offset': 0, 'folder': channel}
+                    functions.saveFile(''+channel+'/'+type+'Vid', vid)
+                    vid['length'] = dialogue.query('Numeric', 'What is the required length of the intro video in seconds? This essnetially would be the amount of seconds before an outro transition starts, if there is any. If left blank the intro video and main video will start at the same time (Default: 0) ', default='0')
+                    vid['offset'] = dialogue.query('Numeric', 'What is the offset at the beginning of the intro video to accomdate transitions in seconds? This is only used if a highlight is played before the intro video (Default: 0) ', default=0)
+                    functions.saveFile(''+channel+'/'+type+'Vid', vid)
+                elif type=='end':
+                    vid = {'file': file_name, 'offset': 0, 'folder': channel}
+                    functions.saveFile(''+channel+'/'+type+'Vid', vid)
+                    vid['offset'] = dialogue.query('Numeric', 'What is the offset at the beginning of the endcard video to accomdate transitions in seconds? This is only used if there is a transition to the endcard (Default: 0) ', default=0)
+                    functions.saveFile(''+channel+'/'+type+'Vid', vid)
+                elif type=='overlay':
+                    vid = {'file': file_name, 'start': 15, 'folder': channel}
+                    functions.saveFile(''+channel+'/'+type+'Vid', vid)
+                    vid['start'] = dialogue.query('Numeric', 'How many seconds into the video would you like the overlay video to play (Default: 15) ', default='15')
+                    functions.saveFile(''+channel+'/'+type+'Vid', vid)
                 else:
-                    self.overlayVid['start'] = util.query('Numeric', 'How many seconds into the video would you like the overlay video to play (Default: 15) ', default='15')
-                    util.saveFile('overlayVid', self.overlayVid)
-            else:
-                self.selectOverlayVid()
+                    return False
         else:
-            existing = util.getFile('overlayVid')
-            if existing:
-                self.deleteOverlayVid(existing)
-
-        user_input = util.query('Y/N', 'Would you like to include an endcard (Y/n)? ', default='Y')
-        if user_input.casefold().startswith('y'):
-            self.endVid = util.getFile('endVid')
-            if self.endVid:
-                user_input = util.query('Y/N', 'Would you like to reuse this endcard file (Y/n)? ', default='Y', prePrint='There is an endcard video on file. "'+self.endVid['file']+'" with an offset of '+self.endVid['offset']+'s')
-                if user_input.casefold().startswith('n'):
-                    self.deleteEndVid(self.endVid)
-                    self.selectEndVid()
-            else:
-                self.selectEndVid()
-        else:
-            existing = util.getFile('endVid')
-            if existing:
-                self.deleteEndVid(existing)
-
-        return {'intro': self.introVid, 'overlay': self.overlayVid, 'endcard': self.endVid, 'highlight': self.highlight, 'trim': self.trim}
-
-    def selectIntroVid(self):
-        print('Please select your video file...')
-        file_path = util.selectVideoFile()
-        if file_path:
-            print('Selected File: '+file_path+'\n')
-            file_name = os.path.split(file_path)[1]
-            if not util.copy(file_path, constants.APPDATA_FOLDER+'/vid/'+file_name):
-                print('Warning: Selected file could not be copied\nProceeding as no intro video will be included\n')
-            else:
-                self.introVid = {'file': file_name, 'length': 0, 'offset': 0}
-                util.saveFile('introVid', self.introVid)
-                self.introVid['length'] = util.query('Numeric', 'What is the required length of the intro video in seconds? This essnetially would be the amount of seconds before an outro transition starts, if there is any. If left blank the intro video and main video will start at the same time (Default: 0) ', default='0')
-                self.introVid['offset'] = util.query('Numeric', 'What is the offset at the beginning of the intro video to accomdate transitions in seconds? This is only used if a highlight is played before the intro video (Default: 0) ', default=0)
-                util.saveFile('introVid', self.introVid)
-        else:
-            print('Warning: No file selected\nProceeding as no intro video will be included\n')
-
-    def selectOverlayVid(self):
-        print('Please select your video file...')
-        file_path = util.selectVideoFile()
-        if file_path:
-            print('Selected File: '+file_path+'\n')
-            file_name = os.path.split(file_path)[1]
-            if not util.copy(file_path, constants.APPDATA_FOLDER+'/vid/'+file_name):
-                print('Warning: Selected file could not be copied\nProceeding as no overlay video will be included\n')
-            else:
-                self.overlayVid = {'file': file_name, 'start': 15}
-                util.saveFile('overlayVid', self.overlayVid)
-                self.introVid['start'] = util.query('Numeric', 'How many seconds into the video would you like the overlay video to play (Default: 15) ', default='15')
-                util.saveFile('overlayVid', self.overlayVid)
-        else:
-            print('Warning: No file selected\nProceeding as no overlay video will be included\n')
-
-    def selectEndVid(self):
-        print('Please select your video file...')
-        file_path = util.selectVideoFile()
-        if file_path:
-            print('Selected File: '+file_path+'\n')
-            file_name = os.path.split(file_path)[1]
-            if not util.copy(file_path, constants.APPDATA_FOLDER+'/vid/'+file_name):
-                print('Warning: Selected file could not be copied\nProceeding as no endcard video will be included\n')
-            else:
-                self.endVid = {'file': file_name, 'offset': 0}
-                util.saveFile('endVid', self.endVid)
-                self.endVid['offset'] = util.query('Numeric', 'What is the offset at the beginning of the endcard video to accomdate transitions in seconds? This is only used if there is a transition to the endcard (Default: 0) ', default=0)
-                util.saveFile('endVid', self.endVid)
-        else:
-            print('Warning: No file selected\nProceeding as no endcard video will be included\n')
-
-    def deleteIntroVid(self, file):
-        print('Deleting existing intro video...')
-        try:
-            os.remove(constants.APPDATA_FOLDER+'/vid/'+file['file'])
-        except:
-            print('Warning: Could not delete existing intro video...')
-        print('Deleting intro video settings...')
-        try:
-            os.remove(constants.APPDATA_FOLDER+'/introVid.json')
-        except:
-            print('Warning: Could not delete intro video settings...')
-        self.introVid = None
-        print('')
-
-    def deleteOverlayVid(self, file):
-        print('Deleting existing overlay video...')
-        try:
-            os.remove(constants.APPDATA_FOLDER+'/vid/'+file['file'])
-        except:
-            print('Warning: Could not delete existing overlay video...')
-        print('Deleting overlay video settings...')
-        try:
-            os.remove(constants.APPDATA_FOLDER+'/overlayVid.json')
-        except:
-            print('Warning: Could not delete overlay video settings...')
-        self.overlayVid = None
-        print('')
-
-    def deleteEndVid(self, file):
-        print('Deleting existing endcard video...')
-        try:
-            os.remove(constants.APPDATA_FOLDER+'/vid/'+file['file'])
-        except:
-            print('Warning: Could not delete existing endcard video...')
-        print('Deleting endcard video settings...')
-        try:
-            os.remove(constants.APPDATA_FOLDER+'/endVid.json')
-        except:
-            print('Warning: Could not delete endcard video settings...')
-        self.endVid = None
-        print('')
-
-    def verifyFile(self, location):
-        print('Verifying existing rendered video...')
-        if not os.path.exists(self.renderLocation+location):
-            print('Existing video file missing, will need to render a new one\n')
+            print('Warning: No file selected\nProceeding as no '+type+' video will be included\n')
             return False
-        else:
-            print('Existing video found, will proceed with the rendered file\n')
-            return True
+
+        return vid
+            
     
-    def render(self, object):
-        print('Prepareing Transcode...')
+    def render(self, object, type='generic'):
+        print('Prepareing Transcode of '+type+' video...')
         command = 'ffmpeg -y '
         command += '-i "'+object['video']['stream']+'" '
+        
+        if type=='generic':
+            options = object['options']
+        else:
+            options = object[type]['options']
 
-        #######
-        #command += '-i "shorty.mp4" '
-        #object['video']['duration'] = 60
-        #######
+        if options['overlay']:
+            command += '-i "'+constants.APPDATA_FOLDER+'/'+options['overlay']['folder']+'/vid/'+options['overlay']['file']+'" '
 
-        if object['options']['overlay']:
-            command += '-i "'+constants.APPDATA_FOLDER+'/vid/'+object['options']['overlay']['file']+'" '
+        if options['intro']:
+            command += '-i "'+constants.APPDATA_FOLDER+'/'+options['intro']['folder']+'/vid/'+options['intro']['file']+'" '
 
-        if object['options']['intro']:
-            command += '-i "'+constants.APPDATA_FOLDER+'/vid/'+object['options']['intro']['file']+'" '
-
-        if object['options']['endcard']:
-            command += '-i "'+constants.APPDATA_FOLDER+'/vid/'+object['options']['endcard']['file']+'" '
+        if options['endcard']:
+            command += '-i "'+constants.APPDATA_FOLDER+'/'+options['endcard']['folder']+'/vid/'+options['endcard']['file']+'" '
 
         filters = []
         duration = 0
@@ -208,20 +187,20 @@ class ffmpeg:
         ain = 0
 
         # Highlight
-        if object['options']['highlight'] and object['options']['intro']:
-            s = int(object['options']['highlight']['start'])
-            e = int(object['options']['highlight']['end'])+int(object['options']['intro']['offset'])
-            d = int(object['options']['highlight']['end'])-int(object['options']['highlight']['start'])
-            o = int(object['options']['intro']['offset'])
+        if options['highlight'] and options['intro']:
+            s = int(options['highlight']['start'])
+            e = int(options['highlight']['end'])+int(options['intro']['offset'])
+            d = int(options['highlight']['end'])-int(options['highlight']['start'])
+            o = int(options['intro']['offset'])
             filters.append('['+str(vin)+':v] trim=start='+str(s)+':'+str(e)+',setpts=PTS-STARTPTS [highlight_vid]')
             filters.append('['+str(ain)+':a] atrim=start='+str(s)+':'+str(e)+',asetpts=PTS-STARTPTS,aresample=async=1 [ha]')
             filters.append('[ha] afade=t=out:st='+str(d)+':d='+str(o)+',aresample=async=1 [highlight_aud]')
             duration += d
             offset = duration
-        elif object['options']['highlight']:
-            s = object['options']['highlight']['start']
-            e = int(object['options']['highlight']['end'])
-            d = int(object['options']['highlight']['end'])-int(object['options']['highlight']['start'])
+        elif options['highlight']:
+            s = options['highlight']['start']
+            e = int(options['highlight']['end'])
+            d = int(options['highlight']['end'])-int(options['highlight']['start'])
             filters.append('['+str(vin)+':v] trim=start='+str(s)+':'+str(e)+',setpts=PTS-STARTPTS [highlight_vid]')
             filters.append('['+str(ain)+':a] atrim=start='+str(s)+':'+str(e)+',asetpts=PTS-STARTPTS,aresample=async=1 [ha]')
             filters.append('[ha] afade=t=out:st='+str(int(d-1))+':d=1,aresample=async=1 [highlight_aud]')
@@ -230,57 +209,57 @@ class ffmpeg:
         vin += 1
         ain += 1
 
-        if object['options']['highlight']:
+        if options['highlight']:
             print('Sometimes when using the Highlight feature it will download the full video first, so the transcode may be unresponsive while it downloads the video.  Please be patient.')
 
         # Overlay
-        if object['options']['overlay']:
-            s = duration+int(object['options']['overlay']['start'])
+        if options['overlay']:
+            s = duration+int(options['overlay']['start'])
             filters.append('['+str(vin)+':v] setpts=PTS-STARTPTS+'+str(s)+'/TB [overlay_vid]')
             filters.append('['+str(ain)+':a] adelay=delays='+str(s)+'s:all=1 [overlay_aud]')
             vin += 1
             ain += 1
 
         # Intro
-        if object['options']['intro']:
-            s = max(duration-int(object['options']['intro']['offset']), 0)
+        if options['intro']:
+            s = max(duration-int(options['intro']['offset']), 0)
             filters.append('['+str(vin)+':v] setpts=PTS-STARTPTS+'+str(s)+'/TB [intro_vid]')
             filters.append('['+str(ain)+':a] adelay=delays='+str(s)+'s:all=1 [intro_aud]')
-            duration += int(object['options']['intro']['length'])-int(object['options']['intro']['offset'])
+            duration += int(options['intro']['length'])-int(options['intro']['offset'])
             offset = duration
             vin += 1
             ain += 1
 
         # Endcard
-        if object['options']['endcard']:
-            if object['options']['trim']:
-                if int(object['options']['trim']['end']>int(object['video']['duration'])):
+        if options['endcard']:
+            if options['trim']:
+                if int(options['trim']['end']>int(object['video']['duration'])):
                     e = int(object['video']['duration'])
                 else:
-                    e = int(object['options']['trim']['end'])
-                s = max(duration+e-int(object['options']['trim']['start'])-int(object['options']['endcard']['offset']), 0)
+                    e = int(options['trim']['end'])
+                s = max(duration+e-int(options['trim']['start'])-int(options['endcard']['offset']), 0)
             else:
-                s = max(duration+int(object['video']['duration'])-int(object['options']['endcard']['offset']), 0)
+                s = max(duration+int(object['video']['duration'])-int(options['endcard']['offset']), 0)
             filters.append('['+str(vin)+':v] setpts=PTS-STARTPTS+'+str(s)+'/TB [endcard_vid]')
             filters.append('['+str(ain)+':a] adelay=delays='+str(s)+'s:all=1 [endcard_aud]')
             try:
-                probe = subprocess.run('ffprobe -v error -select_streams v:0 -show_entries stream=duration -of default=nokey=1:noprint_wrappers=1 "'+constants.APPDATA_FOLDER+'/vid/'+object['options']['endcard']['file']+'"', shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+                probe = subprocess.run('ffprobe -v error -select_streams v:0 -show_entries stream=duration -of default=nokey=1:noprint_wrappers=1 "'+constants.APPDATA_FOLDER+'/'+options['endcard']['folder']+'/vid/'+options['endcard']['file']+'"', shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
                 endcardDuration = probe.stdout.decode('utf-8').strip()
                 duration += int(math.ceil(float(endcardDuration)))
             except:
                 print('Unable to parse the endcard for total duration')
 
         # Main
-        if object['options']['trim']:
-            s = int(object['options']['trim']['start'])
-            if int(object['options']['trim']['end']>int(object['video']['duration'])):
+        if options['trim']:
+            s = int(options['trim']['start'])
+            if int(options['trim']['end']>int(object['video']['duration'])):
                 e = int(object['video']['duration'])
             else:
-                e = int(object['options']['trim']['end'])
+                e = int(options['trim']['end'])
             filters.append('[0:v] trim=start='+str(s)+':'+str(e)+',setpts=PTS-STARTPTS [vid]')
             filters.append('[0:a] atrim=start='+str(s)+':'+str(e)+',asetpts=PTS-STARTPTS,aresample=async=1 [aud]')
             filters.append('[vid] tpad=start_duration='+str(offset)+' [vid'+str(vinc)+']')
-            if object['options']['highlight'] or object['options']['intro']:
+            if options['highlight'] or options['intro']:
                 filters.append('[aud] afade=t=in:st=0:d=3,aresample=async=1 [aud'+str(ainc)+']')
             else:
                 filters.append('[aud] afade=t=in:st=0:d=0,aresample=async=1 [aud'+str(ainc)+']',)
@@ -288,7 +267,7 @@ class ffmpeg:
 
         else:
             filters.append('[0:v] tpad=start_duration='+str(offset)+' [vid'+str(vinc)+']')
-            if object['options']['highlight'] or object['options']['intro']:
+            if options['highlight'] or options['intro']:
                 filters.append('[0:a] afade=t=in:st=0:d=3,aresample=async=1 [aud'+str(ainc)+']')
             else:
                 filters.append('[0:a] afade=t=in:st=0:d=0,aresample=async=1 [aud'+str(ainc)+']',)
@@ -298,12 +277,12 @@ class ffmpeg:
         vinc += 1
         ainc += 1
 
-        if object['options']['endcard']:
-            if object['options']['trim']:
-                if int(object['options']['trim']['end']>int(object['video']['duration'])):
+        if options['endcard']:
+            if options['trim']:
+                if int(options['trim']['end']>int(object['video']['duration'])):
                     e = int(object['video']['duration'])
                 else:
-                    e = int(object['options']['trim']['end'])
+                    e = int(options['trim']['end'])
                 filters.append('[aud'+str(ainc-1)+'] afade=t=out:st='+str(int(e)-3)+':d=3 [aud'+str(ainc)+']')
             else:
                 filters.append('[aud'+str(ainc-1)+'] afade=t=out:st='+str(int(object['video']['duration'])-3)+':d=3 [aud'+str(ainc)+']')
@@ -313,22 +292,22 @@ class ffmpeg:
 
         # Combine Everything
         colorspace = ', colorspace=all=bt709:format=yuv444p10:iall=bt709'
-        if object['options']['highlight']:
+        if options['highlight']:
             filters.append('[vid'+str(vinc-1)+'] [highlight_vid] overlay=enable=gte(t\,0):eof_action=pass'+colorspace+' [vid'+str(vinc)+']')
             colorspace = ''
             vinc += 1
         
-        if object['options']['intro']:
+        if options['intro']:
             filters.append('[vid'+str(vinc-1)+'] [intro_vid] overlay=enable=gte(t\,0):eof_action=pass'+colorspace+' [vid'+str(vinc)+']')
             colorspace = ''
             vinc += 1
 
-        if object['options']['overlay']:
+        if options['overlay']:
             filters.append('[vid'+str(vinc-1)+'] [overlay_vid] overlay=enable=gte(t\,0):eof_action=pass'+colorspace+' [vid'+str(vinc)+']')
             colorspace = ''
             vinc += 1
 
-        if object['options']['endcard']:
+        if options['endcard']:
             filters.append('[vid'+str(vinc-1)+'] [endcard_vid] overlay=enable=gte(t\,0):eof_action=repeat'+colorspace+' [vid'+str(vinc)+']')
             colorspace = ''
             vinc += 1
@@ -336,16 +315,16 @@ class ffmpeg:
         # Audio
         mixer = '[aud'+str(ainc)+']'
         ainput = 1
-        if object['options']['highlight']:
+        if options['highlight']:
             mixer += '[highlight_aud]'
             ainput += 1
-        if object['options']['intro']:
+        if options['intro']:
             mixer += '[intro_aud]'
             ainput += 1
-        if object['options']['endcard']:
+        if options['endcard']:
             mixer += '[endcard_aud]'
             ainput += 1
-        if object['options']['overlay']:
+        if options['overlay']:
             mixer += '[overlay_aud]'
             ainput += 1
         mixer += 'amix=inputs='+str(ainput)+':normalize=0 [a]'
@@ -354,9 +333,9 @@ class ffmpeg:
         filter = ' ; '.join(filters)
         command += '-filter_complex "'+filter+'" '
         command += '-map [vid'+str(vinc-1)+'] -map [a] -crf 18 -c:v libx264 -color_trc bt709 -color_primaries bt709 -colorspace bt709 '
-        command += '"'+self.renderLocation+object['video']['filename']+'"'
+        command += '"'+constants.RENDER_LOCATION+type+'/'+object['video']['filename']+'"'
         
-        util.ensureFolder(self.renderLocation)
+        functions.ensureFolder(constants.RENDER_LOCATION+type+'/')
 
         #print(command)
         print('')
@@ -395,23 +374,27 @@ class ffmpeg:
         print('Success\n')
         return True
 
-    def qc(self, object):
+    def qc(self, object, type='generic'):
         while True:
-            user_input = util.query('Y/N', 'Would you like watch the resulting video to check it (Y/n)? ', default='Y')
+            user_input = dialogue.query('Y/N', 'Would you like watch the resulting '+type+' video to check it (Y/n)? ', default='Y')
             if user_input.casefold().startswith('y'):
-                # Windows
-                # subprocess.run(["start", "video.mp4"], shell=True)
-                # MacOS / Linux
-                subprocess.run(["open", self.renderLocation+object['video']['filename']])
+                if platform.system() == 'Windows':
+                    subprocess.run(['start', constants.RENDER_LOCATION+type+'/'+object['video']['filename']], shell=True)
+                elif platform.system() == 'Darwin':
+                    subprocess.run(["open", constants.RENDER_LOCATION+type+'/'+object['video']['filename']])
+                elif platform.system() == 'Linux':
+                    subprocess.run(["xdg-opem", constants.RENDER_LOCATION+type+'/'+object['video']['filename']])
+                else:
+                    print('Opening Files for Preview is not supported on '+platform.system)
 
-                user_input = util.query('Y/N', 'Are you satisfied with the results (Y/n)? ', default='Y')
+                user_input = dialogue.query('Y/N', 'Are you satisfied with the results (Y/n)? ', default='Y')
                 if user_input.casefold().startswith('y'):
                     return True
                 else:
-                    user_input = util.query('Y/N', 'Would you like to start over (Y/n)? ', default='Y')
+                    user_input = dialogue.query('Y/N', 'Would you like to start over (Y/n)? ', default='Y')
                     if user_input.casefold().startswith('y'):
                         return False
                     else:
-                        util.closeTT()
+                        functions.closeTT()
             else:
                 return True

@@ -1,4 +1,4 @@
-import util
+from util import functions
 
 def intro():
     print('Welcome to TwitchTube\n\nAlong the way you will have to answer a few questions.  All questions are required, however some have a default answer which will be defined as (Default: x) after the prompt, or in the case of a yes / no question, the Capital option will be the default (Y/n) or (y/N)\n')
@@ -33,9 +33,9 @@ def query(type, question, min=0, max=0, prePrint='', default='', errorMsg='', op
 
             # Time
             elif type == 'Time':
-                if util.isValidTimeFormat(user_input):
+                if functions.isValidTimeFormat(user_input):
                     print('')
-                    return(util.seconds(user_input))
+                    return(functions.seconds(user_input))
                 else:
                     if errorMsg:
                         print(errorMsg)

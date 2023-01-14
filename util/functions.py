@@ -5,10 +5,9 @@ import subprocess
 import tkinter
 import tqdm
 import urllib.parse
-import util
 
 from tkinter import filedialog
-from util import constants
+from util import constants, dialogue
 
 tkinter.Tk().withdraw()
 
@@ -78,7 +77,6 @@ def closeTT():
     print('Exiting TwitchTube...')
     exit();
 
-
 def seconds(duration):
     # Set the default values for the hours, minutes, and seconds to 0
     hours = 0
@@ -104,6 +102,18 @@ def seconds(duration):
     total_seconds = 3600 * hours + 60 * minutes + seconds
 
     return total_seconds
+
+def time(seconds):
+    minutes, seconds = divmod(seconds, 60)
+    hours, minutes = divmod(minutes, 60)
+    time_string = ""
+    if hours > 0:
+        time_string += f"{hours}h"
+    if minutes > 0:
+        time_string += f"{minutes}m"
+    if seconds > 0:
+        time_string += f"{seconds}s"
+    return time_string
 
 def parseTwitchUrl(url):
     # Parse the URL and extract the path component
@@ -157,19 +167,6 @@ def copy(src, dst, chunk_size=1024):
         return True
     except:
         return False
-            
-def deleteProgress(object):
-        print('Deleting existing progress...')
-        if object['rendered']:
-            try:
-                os.remove(constants.APPDATA_FOLDER+'/tmp/'+object['video']['filename'])
-            except:
-                print('Warning: Could not delete existing rendered video...')
-        try:
-            os.remove(constants.APPDATA_FOLDER+'/progress.json')
-        except:
-            print('Warning: Could not delete existing progress...')
-        print('')
 
 def isValidTimeFormat(s):
     # Check if the string matches the time format pattern
@@ -179,50 +176,51 @@ def isValidTimeFormat(s):
         return True
     return False
 
-def setOptions(video, youtube, yt_class):
+def setOptions(video, yt_class):
     title = ''
     shortDesc = ''
     description = ''
     keywords = []
     youtube_category = ''
     privacy = 'private'
-    user_input = util.query('Y/N', 'Do you wish to keep that title (Y/n)? ', default='Y', prePrint='The title of this video from Twitch is "'+video['title']+'"')
+    user_input = dialogue.query('Y/N', 'Do you wish to keep that title (Y/n)? ', default='Y', prePrint='The title of this video from Twitch is "'+video['title']+'"')
     if user_input.casefold().startswith('y'):
         title = video['title']
     else:
-        user_input = util.query('Required', 'What title would you like to give this video? ')
+        user_input = dialogue.query('Required', 'What title would you like to give this video? ')
         title = user_input
 
-    shortDesc = util.query('Text', 'Enter a breif description for this specific video: ')
+    shortDesc = dialogue.query('Text', 'Enter a breif description for this specific video: ')
 
-    user_input = util.query('Y/N', 'Do you want to include a longer description below the breif description (Y/n)? ', default='Y')
-    if user_input.casefold().startswith('y'):
-        print('Checking existing saved description...')
-        file = constants.APPDATA_FOLDER+'/desc.txt'
-        if os.path.exists(file):
-            user_input = util.query('Options', 'You have a long description on file, would you like to use it, or view / edit it (USE/edit)? ', default='Use', options=['use', 'edit', 'view'], errorMsg='Please just answer with either use, edit, or view')
-            if user_input.casefold().startswith('use'):
-                description = getDesc(file)
+    if yt_class is not None:
+        user_input = dialogue.query('Y/N', 'This will only be used on youtube (Y/n) ', default='Y', prePrint='Do you want to include a longer description below the breif description?')
+        if user_input.casefold().startswith('y'):
+            print('Checking existing saved description...')
+            file = constants.APPDATA_FOLDER+'/desc.txt'
+            if os.path.exists(file):
+                user_input = dialogue.query('Options', 'You have a long description on file, would you like to use it, or view / edit it (USE/edit)? ', default='Use', options=['use', 'edit', 'view'], errorMsg='Please just answer with either use, edit, or view')
+                if user_input.casefold().startswith('use'):
+                    description = getDesc(file)
+                else:
+                    subprocess.call(['open', '-e', file])
+                    user_input = dialogue.query('Y/N', 'Are you happy with the long desciprtion (Y/n)? ', default='Y')
+                    user_input = dialogue.query('Y/N', 'Confirm that you saved the file (Y/n)? ', default='Y', prePrint='Make sure to save the file and close it before continueing')
+                    description = getDesc(file)
             else:
-                subprocess.call(['open', '-e', file])
-                user_input = util.query('Y/N', 'Are you happy with the long desciprtion (Y/n)? ', default='Y')
-                user_input = util.query('Y/N', 'Confirm that you saved the file (Y/n)? ', default='Y', prePrint='Make sure to save the file and close it before continueing')
-                description = getDesc(file)
-        else:
-            print('No saved description\n')
-            if createFile(file):
-                subprocess.call(['open', '-e', file])
-                user_input = util.query('Y/N', 'Are you happy with the long desciprtion (Y/n)? ', default='Y')
-                user_input = util.query('Y/N', 'Confirm that you saved the file (Y/n)? ', default='Y', prePrint='Make sure to save the file and close it before continueing')
-                description = getDesc(file)
-            else:
-                print('Warning: Could not create the description file\nProceeding as no long description will be included\n')
+                print('No saved description\n')
+                if createFile(file):
+                    subprocess.call(['open', '-e', file])
+                    user_input = dialogue.query('Y/N', 'Are you happy with the long desciprtion (Y/n)? ', default='Y')
+                    user_input = dialogue.query('Y/N', 'Confirm that you saved the file (Y/n)? ', default='Y', prePrint='Make sure to save the file and close it before continueing')
+                    description = getDesc(file)
+                else:
+                    print('Warning: Could not create the description file\nProceeding as no long description will be included\n')
 
-    user_input = util.query('Text', 'Keywords: ', prePrint='Enter keywords for this video, seperate them by , otherwise your going to have a whole mess of issues')
+    user_input = dialogue.query('Text', 'Keywords: ', prePrint='Enter keywords for this video, seperate them by , otherwise your going to have a whole mess of issues')
     if user_input:
         keywords = list(map(str.strip, user_input.split(',')))
 
-    if youtube:
+    if yt_class is not None:
         youtube_category = yt_class.getCategories()
 
     return {'title': title, 'shortDesc': shortDesc, 'description': description, 'keywords': keywords, 'yt_category': youtube_category, 'privacy': privacy}
@@ -246,3 +244,91 @@ def getDesc(file):
     except:
         print('Could not get the saved description\n')
         return ''
+
+def prefs():
+    prefs = getFile(constants.PREFS_FILE)
+    if prefs is not None:
+        user_input = dialogue.query('Y/N', 'Would you like to edit your preferences before we begin (y/N)? ', default='N')
+        if user_input.casefold().startswith('n'):
+            return prefs
+    else:
+        prefs = {}
+
+    prefs = settings('youtube', prefs)
+    prefs = settings('facebook', prefs)
+
+    saveFile(constants.PREFS_FILE, prefs)
+
+    return prefs
+
+def settings(channel, prefs):
+    if channel in prefs:
+        if prefs[channel]['enable']:
+            user_input = dialogue.query('Y/N', 'Would you like to continue to upload to '+channel+' (Y/n)? ', default='Y', prePrint='Your current preference is to upload to '+channel+'.')
+            if user_input.casefold().startswith('y'):
+                prefs[channel]['enable'] = True
+                if prefs[channel]['unique']:
+                    user_input = dialogue.query('Y/N', 'Would you like to continue to upload a unique version to '+channel+' (Y/n)? ', default='Y', prePrint='Your current preference is to upload a unique version to '+channel+'.')
+                    if user_input.casefold().startswith('y'):
+                        prefs[channel]['enable'] = True
+                    else:
+                        prefs[channel]['enable'] = False
+                else:
+                    user_input = dialogue.query('Y/N', 'Would you like to continue to NOT upload a unique version to '+channel+' (Y/n)? ', default='Y', prePrint='Your current preference is to NOT upload a unique version to '+channel+'.')
+                    if user_input.casefold().startswith('y'):
+                        prefs[channel]['enable'] = False
+                    else:
+                        prefs[channel]['enable'] = True
+            else:
+                prefs[channel]['enable'] = False
+                prefs[channel]['unique'] = False
+        else:
+            user_input = dialogue.query('Y/N', 'Would you like to continue to NOT upload to '+channel+' (Y/n)? ', default='Y', prePrint='Your current preference is to NOT upload to '+channel)
+            if user_input.casefold().startswith('n'):
+                prefs[channel]['enable'] = True
+                if prefs[channel]['unique']:
+                    user_input = dialogue.query('Y/N', 'Would you like to continue to upload a unique version to '+channel+' (Y/n)? ', default='Y', prePrint='Your current preference is to upload a unique version to '+channel)
+                    if user_input.casefold().startswith('y'):
+                        prefs[channel]['enable'] = True
+                    else:
+                        prefs[channel]['enable'] = False
+                else:
+                    user_input = dialogue.query('Y/N', 'Would you like to continue to NOT upload a unique version to '+channel+' (Y/n)? ', default='Y', prePrint='Your current preference is to NOT upload a unique version to '+channel)
+                    if user_input.casefold().startswith('y'):
+                        prefs[channel]['enable'] = False
+                    else:
+                        prefs[channel]['enable'] = True
+            else:
+                prefs[channel]['enable'] = False
+                prefs[channel]['unique'] = False
+    else:
+        prefs[channel] = {'enable': False, 'unique': False}
+        user_input = dialogue.query('Y/N', 'Would you like to upload to '+channel+' (Y/n)? ', default='Y')
+        if user_input.casefold().startswith('y'):
+            prefs[channel]['enable'] = True
+            user_input = dialogue.query('Y/N', 'Would you like to upload a unique, specific to '+channel+' version (y/N)? ', default='N')
+            if user_input.casefold().startswith('y'):
+                prefs[channel]['unique'] = True
+            else:
+                prefs[channel]['unique'] = False
+        else:
+            prefs[channel]['enable'] = False
+            prefs[channel]['unique'] = False
+
+    if prefs[channel]['enable'] and prefs[channel]['unique']:
+        print('Preferences set to upload a unique version to '+channel+'\n')
+    elif prefs[channel]['enable']:
+        print('Preferences set to upload to '+channel+'\n')
+    else:
+        print('Preferences set to not upload to '+channel+'\n')
+    return prefs
+
+def cleanUp():
+    print('Cleaning Up and Removing Previous Renders...')
+    files = os.listdir(constants.RENDER_LOCATION)
+    for file in files:
+        file_path = os.path.join(constants.RENDER_LOCATION, file)
+        if os.path.isfile(file_path):
+            os.remove(file_path)
+            print(file_path+' Removed')
+    print('Finished\n')

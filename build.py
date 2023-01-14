@@ -2,7 +2,7 @@ import math
 import subprocess
 import util
 
-from util import constants
+from util import constants, dialogue
 
 print('Building TwitchTube\n')
 
@@ -11,7 +11,7 @@ incVersion = round(constants.VERSION + 0.1, 1)
 jmpVersion = float(math.floor(constants.VERSION) + 1)
 
 print(f'The current version number is {curVersion}.  The next incremental version would be {incVersion}.  Or would you like to jump to to the next release version {jmpVersion}?')
-user_input = util.query('Y/N', '(y/N)? ', default='N')
+user_input = dialogue.query('Y/N', '(y/N)? ', default='N')
 
 
 if user_input.casefold().startswith('y'):
@@ -42,9 +42,9 @@ with open('pyproject.toml', 'w') as file:
     file.writelines(content)
 
 # Git Update
-user_input = util.query('Y/N', 'Would you like to commit changes to git (Y/n)? ', default='Y')
+user_input = dialogue.query('Y/N', 'Would you like to commit changes to git (Y/n)? ', default='Y')
 if user_input.casefold().startswith('y'):
-    m = util.query('Required', 'Enter a description for this commit: ')
+    m = dialogue.query('Required', 'Enter a description for this commit: ')
 
     # Add
     command = 'git add .'

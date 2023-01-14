@@ -1,5 +1,6 @@
 import streamlink
-import util
+
+from util import functions
 
 def getStream(url):
     print('Getting streams for video...')
@@ -10,4 +11,4 @@ def getStream(url):
         return streams['best'].url
     else:
         print('Error: Cannot get stream URL from StreamLink\nPlease try again later\n')
-        util.closeTT()
+        functions.closeTT()

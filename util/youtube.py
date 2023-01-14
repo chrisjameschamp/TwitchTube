@@ -4,10 +4,8 @@ import mimetypes
 import os
 import random
 import requests
-import subprocess
 import time
 import tqdm
-import util
 
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
@@ -16,7 +14,8 @@ from googleapiclient.http import DEFAULT_CHUNK_SIZE
 from oauth2client.client import flow_from_clientsecrets
 from oauth2client.file import Storage
 from oauth2client.tools import argparser, run_flow
-from util import constants
+
+from util import constants, dialogue, functions
 
 # Explicitly tell the underlying HTTP transport library not to retry, since
 # we are handling retry logic ourselves.
@@ -74,13 +73,13 @@ class youtube:
     def __init__(self):
         self.creds = {}
         self.apiKey = None
-        self.uploadLocation = constants.APPDATA_FOLDER+'/tmp/'
+        self.uploadLocation = constants.RENDER_LOCATION+'/youtube/'
 
         self.verifyCredentials()
         self.youtube = self.get_authenticated_service()
 
     def verifyCredentials(self):
-        creds = util.getFile(constants.YOUTUBE_CREDS_FILE)
+        creds = functions.getFile(constants.YOUTUBE_CREDS_FILE)
 
         if creds is not None and not creds['web']['authorized']:
             creds = None
@@ -88,28 +87,28 @@ class youtube:
         if creds is not None and 'client_id' in creds['web']:
             self.creds['client_id'] = creds['web']['client_id']
         else:
-            self.creds['client_id'] = util.query('Required', 'Youtube Client ID: ', prePrint='Enter the Youtube Client ID for you app.  If you do not have a Client ID visit https://developers.google.com/youtube/registering_an_application')
+            self.creds['client_id'] = dialogue.query('Required', 'Youtube Client ID: ', prePrint='Enter the Youtube Client ID for you app.  If you do not have a Client ID visit https://developers.google.com/youtube/registering_an_application')
 
         if creds is not None and 'client_secret' in creds['web']:
             self.creds['client_secret'] = creds['web']['client_secret']
         else:
-            self.creds['client_secret'] = util.query('Required', 'Youtube Client Secret: ', prePrint='Enter the Youtube Client Secret for you app.  If you do not have a Client Secret visit https://developers.google.com/youtube/registering_an_application')
+            self.creds['client_secret'] = dialogue.query('Required', 'Youtube Client Secret: ', prePrint='Enter the Youtube Client Secret for you app.  If you do not have a Client Secret visit https://developers.google.com/youtube/registering_an_application')
 
         self.creds['redirect_uris'] = constants.YOUTUBE_REDIRECT_URIS
         self.creds['auth_uri'] = constants.YOUTUBE_AUTH_URI
         self.creds['token_uri'] = constants.YOUTUBE_TOKEN_URI
         self.creds['authorized'] = False
 
-        util.saveFile(constants.YOUTUBE_CREDS_FILE, {'web': self.creds})
+        functions.saveFile(constants.YOUTUBE_CREDS_FILE, {'web': self.creds})
 
-        api = util.getFile(constants.YOUTUBE_API_FILE)
+        api = functions.getFile(constants.YOUTUBE_API_FILE)
 
         if api is not None:
             self.apiKey = api
         else:
-            self.apiKey = {'api_key': util.query('Required', 'API Key: ', prePrint='Enter the API Key for you app.  If you do not have a API Key visit https://developers.google.com/youtube/v3/getting-started')}
+            self.apiKey = {'api_key': dialogue.query('Required', 'API Key: ', prePrint='Enter the API Key for you app.  If you do not have a API Key visit https://developers.google.com/youtube/v3/getting-started')}
 
-        util.saveFile(constants.YOUTUBE_API_FILE, self.apiKey)
+        functions.saveFile(constants.YOUTUBE_API_FILE, self.apiKey)
 
     def getCategories(self):
         url = constants.YOUTUBE_CATEGORIES
@@ -127,7 +126,7 @@ class youtube:
         
         for i, item in enumerate(categories, 1):
             print(str(i)+') '+item['snippet']['title'])
-        user_input = util.query('Numeric', 'Category Number: ', min=1, max=count)
+        user_input = dialogue.query('Numeric', 'Category Number: ', min=1, max=count)
 
         return categories[int(user_input)-1]['id']
 
@@ -145,7 +144,7 @@ class youtube:
 
         print('')
         self.creds['authorized'] = True
-        util.saveFile(constants.YOUTUBE_CREDS_FILE, {'web': self.creds})
+        functions.saveFile(constants.YOUTUBE_CREDS_FILE, {'web': self.creds})
 
         return build(YOUTUBE_API_SERVICE_NAME, YOUTUBE_API_VERSION,
             http=credentials.authorize(httplib2.Http()), static_discovery=False)
