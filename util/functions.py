@@ -325,10 +325,27 @@ def settings(channel, prefs):
 
 def cleanUp():
     print('Cleaning Up and Removing Previous Renders...')
-    files = os.listdir(constants.RENDER_LOCATION)
-    for file in files:
-        file_path = os.path.join(constants.RENDER_LOCATION, file)
-        if os.path.isfile(file_path):
-            os.remove(file_path)
-            print(file_path+' Removed')
+    items = os.listdir(constants.RENDER_LOCATION)
+    for item in items:
+        path = os.path.join(constants.RENDER_LOCATION, item)
+        if os.path.isfile(path):       
+            try:
+                os.remove(path)
+                print(path+' Removed')
+            except:
+                print('Warning: Could Not Delete '+path)
+        elif os.path.isdir(path):
+            dir = os.listdir(constants.RENDER_LOCATION+'/'+item)
+            for x in dir:
+                if os.path.isfile(constants.RENDER_LOCATION+'/'+item+'/'+x):       
+                    try:
+                        os.remove(constants.RENDER_LOCATION+'/'+item+'/'+x)
+                        print(constants.RENDER_LOCATION+'/'+item+'/'+x+' Removed')
+                    except:
+                        print('Warning: Could Not Delete '+constants.RENDER_LOCATION+'/'+item+'/'+x)
+            try:
+                os.rmdir(constants.RENDER_LOCATION+'/'+item)
+                print(constants.RENDER_LOCATION+'/'+item+' Removed')
+            except:
+                print('Warning: Could Not Delete '+constants.RENDER_LOCATION+'/'+item)
     print('Finished\n')

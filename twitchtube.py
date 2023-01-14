@@ -6,6 +6,7 @@ from util import constants, dialogue, functions, streamlink
 class twitchTube:
     def __init__(self):
         dialogue.intro()
+        ## Check for FFMPEG
         self.preferences = functions.prefs()
         self.object = {}
         self.objectReset()
@@ -81,8 +82,9 @@ class twitchTube:
         if self.object['youtube']['enable']:
             self.object['meta'] = functions.setOptions(self.object['video'], self.youtube)
         elif self.object['facebook']['enable']:
-            self.object['meta'] = functions.setOptions(self.object['video'], None)
-        if self.object['youtube']['enable'] or self.object['facebook']['enable']:
+            #self.object['meta'] = functions.setOptions(self.object['video'], None)
+            pass
+        if self.object['youtube']['enable']:
             self.uploadVideo()
         else:
             self.cleanUp()
