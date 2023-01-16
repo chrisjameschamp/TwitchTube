@@ -1,3 +1,4 @@
+import multiprocessing
 import os
 import util
 
@@ -6,12 +7,13 @@ from util import constants, dialogue, functions, streamlink
 class twitchTube:
     def __init__(self):
         dialogue.intro()
-        ## Check for FFMPEG
+        self.location = os.path.dirname(os.path.realpath(__file__))
         self.preferences = functions.prefs()
         self.object = {}
         self.objectReset()
         self.twitch = util.twitch()
-        self.ffmpeg = util.ffmpeg()
+        self.ffmpeg = util.ffmpeg(self.location)
+        self.ffmpeg.check()
         if self.preferences['youtube']['enable']:
             self.youtube = util.youtube()
         self.chooseVideo()
@@ -95,4 +97,5 @@ class twitchTube:
         self.object = {'video': {}, 'options': {}, 'rendered': False, 'youtube': self.preferences['youtube']}
 
 if __name__ == '__main__':
+    multiprocessing.freeze_support()
     twitchTube()

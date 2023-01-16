@@ -2,13 +2,18 @@ import math
 import os
 import platform
 import re
+import requests
 import tqdm
+import shutil
 import subprocess
+import zipfile
 
 from util import constants, functions, dialogue
 
 class ffmpeg:
-    def __init__(self):
+    def __init__(self, path):
+        self.mpegPath = '"'+path+'/ffmpeg/ffmpeg"'
+        self.probePath = '"'+path+'/ffmpeg/ffprobe"'
         functions.ensureFolder('tmp')
 
     def setOptions(self, channel='generic', options=None):
@@ -161,7 +166,7 @@ class ffmpeg:
     
     def render(self, object, type='generic'):
         print('Prepareing Transcode of '+type+' video...')
-        command = 'ffmpeg -y '
+        command = self.mpegPath+' -y '
         command += '-i "'+object['video']['stream']+'" '
         
         if type=='generic':
@@ -243,7 +248,7 @@ class ffmpeg:
             filters.append('['+str(vin)+':v] setpts=PTS-STARTPTS+'+str(s)+'/TB [endcard_vid]')
             filters.append('['+str(ain)+':a] adelay=delays='+str(s)+'s:all=1 [endcard_aud]')
             try:
-                probe = subprocess.run('ffprobe -v error -select_streams v:0 -show_entries stream=duration -of default=nokey=1:noprint_wrappers=1 "'+constants.APPDATA_FOLDER+'/'+options['endcard']['folder']+'/vid/'+options['endcard']['file']+'"', shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+                probe = subprocess.run(self.probePath +' -v error -select_streams v:0 -show_entries stream=duration -of default=nokey=1:noprint_wrappers=1 "'+constants.APPDATA_FOLDER+'/'+options['endcard']['folder']+'/vid/'+options['endcard']['file']+'"', shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
                 endcardDuration = probe.stdout.decode('utf-8').strip()
                 duration += int(math.ceil(float(endcardDuration)))
             except:
@@ -343,11 +348,12 @@ class ffmpeg:
         print('Starting Transcode...')
         fps = 0
         frames = 0
-        pbar = tqdm.tqdm(total=100, desc='Rendering', unit=' frames')
+        total=100
+        pbar = tqdm.tqdm(total=total, desc='Rendering', unit=' frames')
 
         process = subprocess.Popen(command, shell=True, stdin=subprocess.PIPE,  stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
         for line in process.stdout:
-            #print(line)
+            print(line)
             if line.lstrip().startswith('Stream #'):
                 info = line.split(', ')
                 for item in info:
@@ -398,3 +404,125 @@ class ffmpeg:
                         functions.closeTT()
             else:
                 return True
+
+    def check(self):
+        found = False
+        print('Locating FFmpeg...')
+        while True:
+            command = self.mpegPath+' -version'
+            process = subprocess.Popen(command, shell=True, stdin=subprocess.PIPE,  stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
+            for line in process.stdout:
+                if line.casefold().startswith('ffmpeg version'):
+                    found = True
+                    break
+            command = self.mpegPath+'.exe -version'
+            process = subprocess.Popen(command, shell=True, stdin=subprocess.PIPE,  stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
+            for line in process.stdout:
+                if line.casefold().startswith('ffmpeg version'):
+                    self.mpegPath = self.mpegPath+'.exe'
+                    self.probePath = self.probePath+'.exe'
+                    found = True
+                    break
+            command = '"'+constants.APPDATA_FOLDER+'/ffmpeg/ffmpeg" -version'
+            process = subprocess.Popen(command, shell=True, stdin=subprocess.PIPE,  stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
+            for line in process.stdout:
+                if line.casefold().startswith('ffmpeg version'):
+                    found = True
+                    self.mpegPath = '"'+constants.APPDATA_FOLDER+'/ffmpeg/ffmpeg"'
+                    self.probePath = '"'+constants.APPDATA_FOLDER+'/ffmpeg/probe"'
+                    break
+            command = '"'+constants.APPDATA_FOLDER+'/ffmpeg/ffmpeg.exe" -version'
+            process = subprocess.Popen(command, shell=True, stdin=subprocess.PIPE,  stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
+            for line in process.stdout:
+                if line.casefold().startswith('ffmpeg version'):
+                    found = True
+                    self.mpegPath = '"'+constants.APPDATA_FOLDER+'/ffmpeg/ffmpeg.exe"'
+                    self.probePath = '"'+constants.APPDATA_FOLDER+'/ffmpeg/probe.exe"'
+                    break
+            command = 'ffmpeg -version'
+            process = subprocess.Popen(command, shell=True, stdin=subprocess.PIPE,  stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
+            for line in process.stdout:
+                if line.casefold().startswith('ffmpeg version'):
+                    found = True
+                    self.mpegPath = 'ffmpeg'
+                    break
+            break
+        if found:
+            print('FFmpeg installed\n')
+        else:
+            print('FFmpeg is not installed\n')
+            if platform.system() == 'Windows':
+                zipfile = 'https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip'
+                folder = self.download(zipfile, 'FFmpeg')[0]
+                print('Copying FFmpeg...')
+                functions.copy(constants.APPDATA_FOLDER+'/ffmpeg/'+folder+'bin/ffmpeg.exe', constants.APPDATA_FOLDER+'/ffmpeg/ffmpeg.exe')
+                print('Copying FFprobe...')
+                functions.copy(constants.APPDATA_FOLDER+'/ffmpeg/'+folder+'bin/ffprobe.exe', constants.APPDATA_FOLDER+'/ffmpeg/ffprobe.exe')
+                try:
+                    shutil.rmtree(constants.APPDATA_FOLDER+'/ffmpeg/'+folder)
+                except:
+                    print('Warning: Could not clean up '+constants.APPDATA_FOLDER+'/ffmpeg/'+folder+'\n')
+                self.mpegPath = '"'+constants.APPDATA_FOLDER+'/ffmpeg/ffmpeg.exe"'
+                self.probePath = '"'+constants.APPDATA_FOLDER+'/ffmpeg/ffmpeg.exe"'
+                print('FFmpeg and FFprobe installed\n')
+            elif platform.system() == 'Darwin':
+                #FFmpeg
+                zipfile = 'https://evermeet.cx/ffmpeg/ffmpeg-5.1.2.zip'
+                self.download(zipfile, 'FFmpeg')
+                #FFprobe
+                zipfile = 'https://evermeet.cx/ffmpeg/ffprobe-5.1.2.zip'
+                self.download(zipfile, 'FFprobe')
+                self.mpegPath = '"'+constants.APPDATA_FOLDER+'/ffmpeg/ffmpeg"'
+                self.probePath = '"'+constants.APPDATA_FOLDER+'/ffmpeg/ffmpeg"'
+                print('FFmpeg and FFprobe installed\n')
+            else:
+                print('Cannot automatically install FFmpeg on '+platform.system+'\nManually install FFmpeg and make sure it is accessable via command ffmpeg -version\nVisit https://ffmpeg.org/ for more information')
+                functions.closeTT()
+
+    def download(self, url, type):
+        print('Downloading '+type+'...')
+        dest = constants.APPDATA_FOLDER+'/ffmpeg/'
+        functions.ensureFolder(dest)
+        response = requests.get(url, stream=True)
+        total_size = int(response.headers.get("content-length", 0))
+        block_size = 1024
+        files = None
+        pbar = tqdm.tqdm(total=total_size, unit='B', unit_scale=True, desc='Downloading')
+
+        try:
+            with open(dest+'tmp.zip', 'wb') as file:
+                for data in response.iter_content(block_size):
+                    pbar.update(len(data))
+                    file.write(data)
+            pbar.close()
+            print('Success\n')
+            response.close()
+        except:
+            pbar.close()
+            print('Error downloading '+type+'\nPlease try again later\n')
+            response.close()
+            functions.closeTT()
+        
+        try:
+            with zipfile.ZipFile(dest+'tmp.zip') as file:
+                files = file.namelist()
+                total_size = sum(f.file_size for f in file.infolist())
+                pbar = tqdm.tqdm(total=total_size, desc='Extracting', unit='B', unit_scale=True)
+                for f in file.infolist():
+                    file.extract(f, path=dest)
+                    pbar.update(f.file_size)
+                pbar.close()
+        except:
+            print('Error extracting '+type+'\nPlease try again later\n')
+            functions.closeTT()
+
+        print('Success\n')
+
+        print('Cleaning Up\n')
+        try:
+            os.remove(dest+'tmp.zip')
+        except:
+            print('Warning: Could not clean up temp.zip')
+
+        return files
+

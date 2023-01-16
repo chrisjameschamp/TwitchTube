@@ -2,6 +2,7 @@ import json
 import os
 import re
 import subprocess
+import sys
 import tkinter
 import tqdm
 import urllib.parse
@@ -75,7 +76,7 @@ def getFile(dest):
 
 def closeTT():
     print('Exiting TwitchTube...')
-    exit();
+    sys.exit();
 
 def seconds(duration):
     # Set the default values for the hours, minutes, and seconds to 0
@@ -324,27 +325,28 @@ def settings(channel, prefs):
 
 def cleanUp():
     print('Cleaning Up and Removing Previous Renders...')
-    items = os.listdir(constants.RENDER_LOCATION)
-    for item in items:
-        path = os.path.join(constants.RENDER_LOCATION, item)
-        if os.path.isfile(path):       
-            try:
-                os.remove(path)
-                print(path+' Removed')
-            except:
-                print('Warning: Could Not Delete '+path)
-        elif os.path.isdir(path):
-            dir = os.listdir(constants.RENDER_LOCATION+'/'+item)
-            for x in dir:
-                if os.path.isfile(constants.RENDER_LOCATION+'/'+item+'/'+x):       
-                    try:
-                        os.remove(constants.RENDER_LOCATION+'/'+item+'/'+x)
-                        print(constants.RENDER_LOCATION+'/'+item+'/'+x+' Removed')
-                    except:
-                        print('Warning: Could Not Delete '+constants.RENDER_LOCATION+'/'+item+'/'+x)
-            try:
-                os.rmdir(constants.RENDER_LOCATION+'/'+item)
-                print(constants.RENDER_LOCATION+'/'+item+' Removed')
-            except:
-                print('Warning: Could Not Delete '+constants.RENDER_LOCATION+'/'+item)
+    if os.path.exists(constants.RENDER_LOCATION):
+        items = os.listdir(constants.RENDER_LOCATION)
+        for item in items:
+            path = os.path.join(constants.RENDER_LOCATION, item)
+            if os.path.isfile(path):       
+                try:
+                    os.remove(path)
+                    print(path+' Removed')
+                except:
+                    print('Warning: Could Not Delete '+path)
+            elif os.path.isdir(path):
+                dir = os.listdir(constants.RENDER_LOCATION+'/'+item)
+                for x in dir:
+                    if os.path.isfile(constants.RENDER_LOCATION+'/'+item+'/'+x):       
+                        try:
+                            os.remove(constants.RENDER_LOCATION+'/'+item+'/'+x)
+                            print(constants.RENDER_LOCATION+'/'+item+'/'+x+' Removed')
+                        except:
+                            print('Warning: Could Not Delete '+constants.RENDER_LOCATION+'/'+item+'/'+x)
+                try:
+                    os.rmdir(constants.RENDER_LOCATION+'/'+item)
+                    print(constants.RENDER_LOCATION+'/'+item+' Removed')
+                except:
+                    print('Warning: Could Not Delete '+constants.RENDER_LOCATION+'/'+item)
     print('Finished\n')

@@ -6,13 +6,16 @@ __pycache__/
 # C extensions
 *.so
 
+# Twitchtube
+build/
+build.py
+ffmpeg/
+tmp/
+
 # Distribution / packaging
 .Python
 pyu-data/
 *.pyu
-build/
-build.py
-docs/
 develop-eggs/
 dist/
 downloads/

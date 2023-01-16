@@ -61,3 +61,12 @@ if user_input.casefold().startswith('y'):
     process = subprocess.Popen(command, shell=True, stdin=subprocess.PIPE,  stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
     for line in process.stdout:
         print(line, end='')
+
+# Git Build
+user_input = dialogue.query('Y/N', 'Would you like to compile a new release (Y/n)? ', default='Y')
+if user_input.casefold().startswith('y'):
+    command = 'pyinstaller build/TwitchTube.spec --name TwitchTube-MacOS-'+version+' --clean'
+
+    process = subprocess.Popen(command, shell=True, stdin=subprocess.PIPE,  stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
+    for line in process.stdout:
+        print(line, end='')
