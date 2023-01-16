@@ -12,9 +12,9 @@ from util import constants, functions, dialogue
 
 class ffmpeg:
     def __init__(self, path):
+        self.realPath = path
         self.mpegPath = '"'+path+'/ffmpeg/ffmpeg"'
         self.probePath = '"'+path+'/ffmpeg/ffprobe"'
-        functions.ensureFolder('tmp')
 
     def setOptions(self, channel='generic', options=None):
         if channel!='generic':
@@ -353,7 +353,7 @@ class ffmpeg:
 
         process = subprocess.Popen(command, shell=True, stdin=subprocess.PIPE,  stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
         for line in process.stdout:
-            print(line)
+            #print(line, end='')
             if line.lstrip().startswith('Stream #'):
                 info = line.split(', ')
                 for item in info:
@@ -415,12 +415,12 @@ class ffmpeg:
                 if line.casefold().startswith('ffmpeg version'):
                     found = True
                     break
-            command = self.mpegPath+'.exe -version'
+            command = '"'+self.realPath+'/ffmpeg/ffmpeg.exe" -version'
             process = subprocess.Popen(command, shell=True, stdin=subprocess.PIPE,  stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
             for line in process.stdout:
                 if line.casefold().startswith('ffmpeg version'):
-                    self.mpegPath = self.mpegPath+'.exe'
-                    self.probePath = self.probePath+'.exe'
+                    self.mpegPath = '"'+self.realPath+'/ffmpeg/ffmpeg.exe"'
+                    self.probePath = '"'+self.realPath+'/ffmpeg/ffprobe.exe"'
                     found = True
                     break
             command = '"'+constants.APPDATA_FOLDER+'/ffmpeg/ffmpeg" -version'
