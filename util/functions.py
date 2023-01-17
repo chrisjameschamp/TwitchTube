@@ -1,12 +1,14 @@
 import json
 import os
 import re
+import requests
 import subprocess
 import sys
 import tkinter
 import tqdm
 import urllib.parse
 
+from packaging.version import Version
 from tkinter import filedialog
 from util import constants, dialogue
 
@@ -350,3 +352,22 @@ def cleanUp():
                 except:
                     print('Warning: Could Not Delete '+constants.RENDER_LOCATION+'/'+item)
     print('Finished\n')
+
+def checkVersion():
+    print('Version: '+constants.VERSION)
+    print('Checking for Updates...')
+    
+    url = 'https://api.github.com/repos/chrisjameschamp/TwitchTube/releases/latest'
+    response = requests.get(url).json()
+    if 'tag_name' in response:
+        gitVersion = Version(response['tag_name'])
+        curVersion = Version(constants.VERSION)
+
+        if gitVersion > curVersion:
+            print('There is a new version of TwitchTube available\nThe Most recent version is '+str(gitVersion))
+            print('Get the latest version by visiting https://github.com/chrisjameschamp/TwitchTube\n')
+        else:
+            print('You are up to date\n')
+
+    else:
+        print('Error Checking for Updates')

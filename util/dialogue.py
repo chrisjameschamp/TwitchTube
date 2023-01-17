@@ -1,7 +1,9 @@
 from util import constants, functions
 
 def intro():
-    print('Welcome to TwitchTube\nVersion '+constants.VERSION+'\n\nAlong the way you will have to answer a few questions.  All questions are required, however some have a default answer which will be defined as (Default: x) after the prompt, or in the case of a yes / no question, the Capital option will be the default (Y/n) or (y/N)\n')
+    print('Welcome to TwitchTube')
+    functions.checkVersion()
+    print('Along the way you will have to answer a few questions.  All questions are required, however some have a default answer which will be defined as (Default: x) after the prompt, or in the case of a yes / no question, the Capital option will be the default (Y/n) or (y/N)\n')
 
 def query(type, question, min=0, max=0, prePrint='', default='', errorMsg='', options=[]):
         if prePrint:
