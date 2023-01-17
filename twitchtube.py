@@ -22,7 +22,6 @@ class twitchTube:
         video = self.twitch.getVideos()
         video['stream'] = streamlink.getStream(video['url'])
         self.object['video'] = video
-        functions.saveFile('progress', self.object)
         self.chooseOptions()
 
     def chooseOptions(self):

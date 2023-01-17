@@ -389,7 +389,7 @@ class ffmpeg:
                 elif platform.system() == 'Darwin':
                     subprocess.run(["open", constants.RENDER_LOCATION+type+'/'+object['video']['filename']])
                 elif platform.system() == 'Linux':
-                    subprocess.run(["xdg-opem", constants.RENDER_LOCATION+type+'/'+object['video']['filename']])
+                    subprocess.run(["xdg-open", constants.RENDER_LOCATION+type+'/'+object['video']['filename']])
                 else:
                     print('Opening Files for Preview is not supported on '+platform.system)
 

@@ -40,10 +40,10 @@ class twitch:
 
     def testCredentials(self, creds):
         print('Testing credentials...')
-        result = self.getTwitchData(constants.TWITCH_USERINFO+self.channel)
         
         try:
             while True:
+                result = self.getTwitchData(constants.TWITCH_USERINFO+self.channel)
                 if 'error' in result or not result['data']:
                     if 'error' in result:
                         print('Error: '+str(result['status'])+' '+result['message']+'\n')
