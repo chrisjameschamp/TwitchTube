@@ -221,6 +221,8 @@ Once all options are set the video will upload to Youtube.  Once complete **Twit
 
 You can save a copy of both the generic and Youtube versions locally if you choose to.  **WARNING**: If you do not save a copy locally, it will be deleted next time **TwitchTube** runs.
 
+**And Thats It!**
+
 ## 
 <div align="center">
   <a href="https://paypal.me/Champeau?country.x=US&locale.x=en_US"><img src="https://img.shields.io/badge/Buy_Me_A_Coffee-FFDD00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black"></a>
