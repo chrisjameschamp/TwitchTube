@@ -41,7 +41,7 @@
     * [Keywords](#keywords)
     * [Category](#category)
   * [Uploading](#uploading)
-  * [Saving Vido](#saving-video)
+  * [Saving Video](#saving-video)
 
 
 ## Download
