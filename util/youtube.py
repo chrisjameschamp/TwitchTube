@@ -150,6 +150,7 @@ class youtube:
             http=credentials.authorize(httplib2.Http()), static_discovery=False)
 
     def upload(self, object):
+        self.youtube = self.get_authenticated_service()
         print('Preparing Upload...')
         try:
             self.initialize_upload(object)
