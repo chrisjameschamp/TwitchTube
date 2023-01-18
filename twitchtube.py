@@ -7,7 +7,6 @@ from util import constants, dialogue, functions, streamlink
 class twitchTube:
     def __init__(self):
         dialogue.intro()
-        exit()
         self.location = os.path.dirname(os.path.realpath(__file__))
         self.preferences = functions.prefs()
         self.object = {}
