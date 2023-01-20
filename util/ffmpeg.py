@@ -342,7 +342,7 @@ class ffmpeg:
         
         functions.ensureFolder(constants.RENDER_LOCATION+type+'/')
 
-        print(command)
+        #print(command)
         print('')
 
         print('Starting Transcode...')
@@ -353,7 +353,7 @@ class ffmpeg:
 
         process = subprocess.Popen(command, shell=True, stdin=subprocess.PIPE,  stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
         for line in process.stdout:
-            print(line, end='')
+            #print(line, end='')
             if line.lstrip().startswith('Stream #'):
                 info = line.split(', ')
                 for item in info:
