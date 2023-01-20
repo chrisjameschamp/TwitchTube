@@ -263,7 +263,7 @@ class ffmpeg:
                 e = int(options['trim']['end'])
             filters.append('[0:v] trim=start='+str(s)+':'+str(e)+',setpts=PTS-STARTPTS [vid]')
             filters.append('[0:a] atrim=start='+str(s)+':'+str(e)+',asetpts=PTS-STARTPTS,aresample=async=1 [aud]')
-            filters.append('[vid] tpad=start_duration='+str(offset)+' [vid'+str(vinc)+']')
+            filters.append('[vid] tpad=start_duration='+str(offset)+', colorspace=all=bt709:format=yuv444p:iall=bt709 [vid'+str(vinc)+']')
             if options['highlight'] or options['intro']:
                 filters.append('[aud] afade=t=in:st=0:d=3,aresample=async=1 [aud'+str(ainc)+']')
             else:
@@ -271,7 +271,7 @@ class ffmpeg:
             duration += e-s
 
         else:
-            filters.append('[0:v] tpad=start_duration='+str(offset)+' [vid'+str(vinc)+']')
+            filters.append('[0:v] tpad=start_duration='+str(offset)+', colorspace=all=bt709:format=yuv444p:iall=bt709 [vid'+str(vinc)+']')
             if options['highlight'] or options['intro']:
                 filters.append('[0:a] afade=t=in:st=0:d=3,aresample=async=1 [aud'+str(ainc)+']')
             else:
@@ -296,7 +296,7 @@ class ffmpeg:
         filters.append('[aud'+str(ainc-1)+'] adelay=delays='+str(offset)+'s:all=1,aresample=async=1 [aud'+str(ainc)+']')
 
         # Combine Everything
-        colorspace = ', colorspace=all=bt709:format=yuv444p10:iall=bt709'
+        colorspace = ', colorspace=all=bt709:format=yuv444p:iall=bt709'
         if options['highlight']:
             filters.append('[vid'+str(vinc-1)+'] [highlight_vid] overlay=enable=gte(t\,0):eof_action=pass'+colorspace+' [vid'+str(vinc)+']')
             colorspace = ''
@@ -342,7 +342,7 @@ class ffmpeg:
         
         functions.ensureFolder(constants.RENDER_LOCATION+type+'/')
 
-        #print(command)
+        print(command)
         print('')
 
         print('Starting Transcode...')
@@ -353,7 +353,7 @@ class ffmpeg:
 
         process = subprocess.Popen(command, shell=True, stdin=subprocess.PIPE,  stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
         for line in process.stdout:
-            #print(line, end='')
+            print(line, end='')
             if line.lstrip().startswith('Stream #'):
                 info = line.split(', ')
                 for item in info:
