@@ -9,7 +9,6 @@ __pycache__/
 # Twitchtube
 build/
 compile.py
-git.py
 ffmpeg/
 tmp/
 

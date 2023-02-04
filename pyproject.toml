@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "twitchtube"
-version = "1.8.5"
+version = "1.8.6"
 description = ""
 authors = ["Chris Champeau <semaj4712@gmail.com>"]
 readme = "README.md"
