@@ -60,7 +60,7 @@ The graphic above demonstrates an example of how a timeline would look if all th
   
 ### Example
 
-This is an example of a Twitch highlight before and after running it through **TwitchTube** with all options enabled.
+This is an example of a Twitch highlight before and after running it through **TwitchTube** with all options enabled. (You will need to click on the images to see the differences on Twitch and on Youtube)
   
 |Before|After|
 |:---:|:---:|
