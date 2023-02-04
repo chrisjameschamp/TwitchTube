@@ -8,6 +8,9 @@
   ![Github repo top lang](https://img.shields.io/github/languages/top/chrisjameschamp/TwitchTube?style=flat-square)
   ![GitHub license](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)
   ![GitHub last commit](https://img.shields.io/github/last-commit/chrisjameschamp/TwitchTube?style=flat-square)
+  ![GitHub downloads](https://img.shields.io/github/downloads/chrisjameschamp/TwitchTube/total?style=flat-square)
+  ![GitHub release](https://img.shields.io/github/v/release/chrisjameschamp/TwitchTube?style=flat-square&display_name=tag)
+  
 
 </div>
 <div align="center">
