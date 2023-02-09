@@ -82,7 +82,7 @@ class ColorizedArgsFormatter(logging.Formatter):
     def format(self, record):
         orig_msg = record.msg
         orig_args = record.args
-        record.levelname = record.levelname.upper()
+        record.levelname = self.level_names.get(record.levelno, record.levelname)
         formatter = self.level_to_formatter.get(record.levelno)
         self.rewrite_record(record)
         formatted = formatter.format(record)
@@ -127,7 +127,6 @@ class BraceFormatStyleFormatter(logging.Formatter):
     def format(self, record):
         orig_msg = record.msg
         orig_args = record.args
-        record.levelname = record.levelname.upper()
         self.rewrite_record(record)
         formatted = self.formatter.format(record)
         
