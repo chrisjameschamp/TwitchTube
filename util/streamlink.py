@@ -1,14 +1,18 @@
+import logging
 import streamlink
 
 from util import functions
 
+logger = logging.getLogger(__name__)
+
 def getStream(url):
-    print('Getting streams for video...')
-    print(url)
+    logging.info('Getting streams for video...')
+    logging.info(url)
     streams = streamlink.streams(url)
     if streams:
-        print('Success\n')
+        logging.info('Success')
         return streams['best'].url
     else:
-        print('Error: Cannot get stream URL from StreamLink\nPlease try again later\n')
+        logging.error('Cannot get stream URL from StreamLink')
+        logging.warning('Please try again later')
         functions.closeTT()

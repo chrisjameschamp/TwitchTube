@@ -1,3 +1,4 @@
+import logging
 import requests
 
 from datetime import datetime
@@ -5,6 +6,7 @@ from util import constants, dialogue, functions
 
 class twitch:
     def __init__(self):
+        self.logger = logging.getLogger(__name__)
         self.client_id = 0
         self.oauth = None
         self.channel = None
@@ -35,32 +37,33 @@ class twitch:
         if creds is not None and 'channel' in creds:
             self.channel = creds['channel']
         else:
-            print('Ok so we have a Client ID and an Authorization code to access data from Twtich')
+            self.logger.info('Ok so we have a Client ID and an Authorization code to access data from Twtich')
             self.channel = dialogue.query('Required', 'Channel Name: ', prePrint='Enter the Channel Name you would like to download videos from')
 
     def testCredentials(self, creds):
-        print('Testing credentials...')
+        self.logger.debug('Testing credentials...')
         
         try:
             while True:
                 result = self.getTwitchData(constants.TWITCH_USERINFO+self.channel)
                 if 'error' in result or not result['data']:
                     if 'error' in result:
-                        print('Error: '+str(result['status'])+' '+result['message']+'\n')
-                    print('Please verify the supplied credentials and try again\n')
+                        self.logger.error('{} {}', result['status'], result['message'])
+                    self.logger.warning('Please verify the supplied credentials and try again')
 
                     self.enterCredentials(creds)
                 else:
-                    print('Success!\n')
+                    self.logger.info('Success!')
                     self.channel_id = result['data'][0]['id']
                     break
         except:
-            print('Error connecting to network to test credentials\nPlease try again later\n')
+            self.logger.error('Error connecting to network to test credentials')
+            self.logger.warning('Please try again later')
             functions.closeTT()
 
     def getVideos(self):
 
-        print('On file the Twitch Channel you would like to download videos from is: '+self.channel)
+        self.logger.info('On file the Twitch Channel you would like to download videos from is: {}', self.channel)
         user_input = dialogue.query('Y/N', 'Would you like to keep using that Channel (Y/n)? ', default='Y')
         if user_input.casefold().startswith('n'):
             creds = functions.getFile(constants.TWITCH_CREDS_FILE)
@@ -71,14 +74,14 @@ class twitch:
 
             functions.saveFile(constants.TWITCH_CREDS_FILE, creds)
 
-        print('Getting recent highlights from Twitch for user: '+self.channel+'...')
+        self.logger.info('Getting recent highlights from Twitch for user: {}...', self.channel)
         videos = self.getTwitchData(constants.TWITCH_VIDEOS+self.channel_id)
 
         if not videos['data']:
-            print('There are no recent videos available for '+self.channel+'\n')
+            self.logger.error('There are no recent videos available for {}', self.channel)
             functions.closeTT()
 
-        print('Filtering for just Highlights...')
+        self.logger.debug('Filtering for just Highlights...')
         highlights = []
 
         for video in videos['data']:
@@ -86,17 +89,17 @@ class twitch:
                 highlights.append({'title': video['title'], 'url': video['url'], 'duration': functions.seconds(video['duration']), 'filename': video['user_login']+'_'+video['id']+'.mp4'})
 
         if not highlights:
-            print('There are no recent highlights available for '+self.channel+'\n')
+            self.logger.error('There are no recent highlights available for {}', self.channel)
             functions.closeTT()
 
         count = len(highlights)
-        print('')
 
-        print('We have found '+str(count)+' highlights to choose from')
-        print('Please choose the corresponding number to which video you would like to select\nOr you can choose other to manually enter a twitch video\n')
+        self.logger.info('We have found {} highlights to choose from', count)
+        self.logger.info('Please choose the corresponding number to which video you would like to select')
+        self.logger.info('Or you can choose other to manually enter a twitch video')
         for i, item in enumerate(highlights, 1):
-            print(str(i)+') '+item['title'])
-        print(str(count+1)+') Other')
+            self.logger.info('  {}) {}', i, item['title'])
+        self.logger.info('  {}) Other', count+1)
         user_input = dialogue.query('Numeric', 'Video Number: ', min=1, max=count+1)
         if int(user_input) == count+1:
             while True:
@@ -107,16 +110,17 @@ class twitch:
                 if 'data' in video and video['data']:
                     video = video['data'][0]
                     video = {'title': video['title'], 'url': video['url'], 'duration': functions.seconds(video['duration']), 'filename': video['user_login']+'_'+video['id']+'.mp4'}
-                    print('We found a video that matches\n'+video['title'])
+                    self.logger.info('We found a video that matches')
+                    self.logger.info('{}', video['title'])
                     user_input = dialogue.query('Y/N', 'Is that the video you were looking for (Y/n)? ', default='Y')
                     if user_input.casefold().startswith('y'):
                         break
                 else:
-                    print('We Could not find a video with that URL, Try Again')
+                    self.logger.error('We Could not find a video with that URL, Try Again')
         else:
             video = highlights[int(user_input)-1]
 
-            print('Awesome you selected '+str(int(user_input))+') '+video['title']+'\n')
+            self.logger.info('Awesome you selected {}) {}', int(user_input), video['title'])
 
         return video
 

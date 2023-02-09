@@ -1,11 +1,16 @@
+import logging
 import multiprocessing
 import os
+import sys
 import util
 
-from util import constants, dialogue, functions, streamlink
+from util import colargulog, constants, dialogue, functions, streamlink
+
+DEBUG = False
 
 class twitchTube:
     def __init__(self):
+        self.logger = logging.getLogger(__name__)
         dialogue.intro()
         self.location = os.path.dirname(os.path.realpath(__file__))
         self.preferences = functions.prefs()
@@ -32,13 +37,13 @@ class twitchTube:
 
     def renderVideo(self):
         if self.object['youtube']['unique'] and self.object['youtube']['options'] == self.object['options']:
-            print('Both Youtube and generic videos are the same')
+            self.logger.info('Both Youtube and generic videos are the same')
             user_input = dialogue.query('Y/N', 'Would you like to render the generic video (y/N)? ', default='N')
             if user_input.casefold().startswith('y'):
                 self.ffmpeg.render(self.object)
                 self.object['rendered'] = True
             else:
-                print('Skipping the generic render\n')
+                self.logger.info('Skipping the generic render')
         else:
             self.ffmpeg.render(self.object)
             self.object['rendered'] = True
@@ -73,14 +78,14 @@ class twitchTube:
         if self.object['rendered']:
             user_input = dialogue.query('Y/N', 'Would you like to save a copy of the generic rendered video to your computer (y/N)? ', default='N')
             if user_input.casefold().startswith('y'):
-                print('Please select the destination folder...')
+                self.logger.info('Please select the destination folder...')
                 folder_path = functions.selectDestFolder()
                 filename, ext = os.path.splitext(self.object['video']['filename'])
                 functions.copy(constants.RENDER_LOCATION+'generic/'+self.object['video']['filename'], folder_path+'/'+filename+'_gen'+ext, chunk_size=1024)
         if self.object['youtube']['enable']:
             user_input = dialogue.query('Y/N', 'Would you like to save a copy of the youtube rendered video to your computer (y/N)? ', default='N')
             if user_input.casefold().startswith('y'):
-                print('Please select the destination folder...')
+                self.logger.info('Please select the destination folder...')
                 folder_path = functions.selectDestFolder()
                 filename, ext = os.path.splitext(self.object['video']['filename'])
                 functions.copy(constants.RENDER_LOCATION+'youtube/'+self.object['video']['filename'], folder_path+'/'+filename+'_yt'+ext, chunk_size=1024)
@@ -96,5 +101,23 @@ class twitchTube:
         self.object = {'video': {}, 'options': {}, 'rendered': False, 'youtube': self.preferences['youtube']}
 
 if __name__ == '__main__':
+    if len(sys.argv) > 1 and sys.argv[1] == '--debug':
+        DEBUG = True
+    
+    # SETUP LOG LEVEL - DEBUG: debug message | INFO: info message | WARNING: warn message | ERROR: error message
+    console_handler = logging.StreamHandler(stream=sys.stdout)
+    if DEBUG:
+        colored_formatter = colargulog.ColorizedArgsFormatter(constants.TERMINAL_FORMAT_DEBUG)
+    else:
+        colored_formatter = colargulog.ColorizedArgsFormatter(constants.TERMINAL_FORMAT, constants.TERMINAL_DATE_FMT)
+    console_handler.setFormatter(colored_formatter)
+    logging.getLogger().setLevel(logging.INFO)
+    logger = logging.getLogger()
+    logger.name = 'TwitchTube'
+    logger.addHandler(console_handler)
+    if DEBUG:
+        logging.getLogger().setLevel(logging.DEBUG)
+        logger.debug('-------------------DEBUG ACTIVE-------------------')
+
     multiprocessing.freeze_support()
     twitchTube()

@@ -1,5 +1,6 @@
 import httplib2
 import io
+import logging
 import mimetypes
 import os
 import random
@@ -16,6 +17,8 @@ from oauth2client.file import Storage
 from oauth2client.tools import argparser, run_flow
 
 from util import constants, dialogue, functions
+
+logger = logging.getLogger(__name__)
 
 # Explicitly tell the underlying HTTP transport library not to retry, since
 # we are handling retry logic ourselves.
@@ -121,17 +124,17 @@ class youtube:
         categories = requests.get(url, params=params).json()['items']
 
         count = len(categories)
-        print('We have found '+str(count)+' categories to choose from')
-        print('Please choose the corresponding number to which category you would like to select\n')
+        logger.info('We have found {} categories to choose from', count)
+        logger.info('Please choose the corresponding number to which category you would like to select')
         
         for i, item in enumerate(categories, 1):
-            print(str(i)+') '+item['snippet']['title'])
+            logger.info('  {}) {}', i, item['snippet']['title'])
         user_input = dialogue.query('Numeric', 'Category Number: ', min=1, max=count)
 
         return categories[int(user_input)-1]['id']
 
     def get_authenticated_service(self):
-        print('Confirming Youtube Credentials...')
+        logger.info('Confirming Youtube Credentials...')
         flow = flow_from_clientsecrets(CLIENT_SECRETS_FILE,
             scope=YOUTUBE_UPLOAD_SCOPE,
             message=MISSING_CLIENT_SECRETS_MESSAGE)
@@ -142,7 +145,6 @@ class youtube:
         if credentials is None or credentials.invalid:
             credentials = run_flow(flow, storage)
 
-        print('')
         self.creds['authorized'] = True
         functions.saveFile(constants.YOUTUBE_CREDS_FILE, {'web': self.creds})
 
@@ -151,12 +153,12 @@ class youtube:
 
     def upload(self, object):
         self.youtube = self.get_authenticated_service()
-        print('Preparing Upload...')
+        logger.info('Preparing Upload...')
         try:
             self.initialize_upload(object)
             return True
         except HttpError as e:
-            print("An HTTP error %d occurred:\n%s" % (e.resp.status, e.content))
+            logger.error("An HTTP error {} occurred: {}", e.resp.status, e.content)
             return False
 
     def initialize_upload(self, object):
@@ -224,13 +226,13 @@ class youtube:
                 if response is not None:
                     if 'id' in response:
                         pbar.close()
-                        print('\nVideo id "'+response['id']+'" was successfully uploaded')
-                        print('Youtube video link: https://www.youtube.com/watch?v='+response['id'])
-                        print('Youtube Studio link: https://studio.youtube.com/video/'+response['id']+'/edit\n')
+                        logger.info('Video id "{}" was successfully uploaded', response['id'])
+                        logger.info('Youtube video link: https://www.youtube.com/watch?v={}', response['id'])
+                        logger.info('Youtube Studio link: https://studio.youtube.com/video/{}/edit', response['id'])
                         return True
                     else:
                         pbar.close()
-                        print('\nThe upload failed with an unexpected response: '+response+'\n')
+                        logger.error('The upload failed with an unexpected response: {}', response)
                         return False
             except HttpError as e:
                 pbar.close()
@@ -243,16 +245,16 @@ class youtube:
                 error = "A retriable error occurred: %s" % e
 
             if error is not None:
-                print(error)
+                logger.error('{}', error)
                 retry += 1
                 if retry > MAX_RETRIES:
                     pbar.close()
-                    print("No longer attempting to retry.")
+                    logger.warning("No longer attempting to retry")
                     return False
 
                 max_sleep = 2 ** retry
                 sleep_seconds = random.random() * max_sleep
-                print("Sleeping %f seconds and then retrying..." % sleep_seconds)
+                logging.warning("Sleeping {} seconds and then retrying...", sleep_seconds)
                 time.sleep(sleep_seconds)
 
 class MediaFileUploadWithProgressBar(MediaIoBaseUpload):

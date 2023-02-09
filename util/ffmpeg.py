@@ -1,3 +1,4 @@
+import logging
 import math
 import os
 import platform
@@ -12,15 +13,17 @@ from util import constants, functions, dialogue
 
 class ffmpeg:
     def __init__(self, path):
+        self.logger = logging.getLogger(__name__)
         self.realPath = path
         self.mpegPath = '"'+path+'/ffmpeg/ffmpeg"'
         self.probePath = '"'+path+'/ffmpeg/ffprobe"'
 
     def setOptions(self, channel='generic', options=None):
         if channel!='generic':
-            print('Configuring video file for '+channel+'...\n')
+            self.logger.info('Configuring video file for {}...', channel)
         else:
-            print('First we will configure the generic video file\nWe will configure the unique versions afterwards\n')
+            self.logger.info('First we will configure the generic video file')
+            self.logger.info('We will configure the unique versions afterwards')
 
         highlight = None
         if options and 'highlight' in options and options['highlight']:
@@ -115,28 +118,28 @@ class ffmpeg:
                 return False
 
             if user_input.casefold().startswith('n'):
-                print('Deleting existing '+channel+' '+type+' video...')
+                self.logger.info('Deleting existing {} {} video...', channel, type)
                 try:
                     os.remove(constants.APPDATA_FOLDER+'/'+channel+'/vid/'+vid['file'])
                 except:
-                    print('Warning: Could not delete existing '+channel+' '+type+' video...')
-                print('Deleting '+channel+' '+type+' video settings...')
+                    self.logger.error('Could not delete existing {} {} video...', channel, type)
+                self.logger.info('Deleting {} {} video settings...', channel, type)
                 try:
                     os.remove(constants.APPDATA_FOLDER+'/'+channel+'/'+type+'Vid.json')
                 except:
-                    print('Warning: Could not delete '+channel+' '+type+' video settings...')
+                    self.logger.error('Could not delete {} {} video settings...', channel, type)
                 vid = None
-                print('')
             else:
                 return vid
 
-        print('Please select your video file...')
+        self.logger.info('Please select your video file...')
         file_path = functions.selectVideoFile()
         if file_path:
-            print('Selected File: '+file_path+'\n')
+            self.logger.info('Selected File: {}', file_path)
             file_name = os.path.split(file_path)[1]
             if not functions.copy(file_path, constants.APPDATA_FOLDER+'/'+channel+'/vid/'+file_name):
-                print('Warning: Selected file could not be copied\nProceeding as no '+type+' video will be included\n')
+                self.logger.error('Selected file could not be copied')
+                self.logger.warning('Proceeding as no {} video will be included', type)
                 return False
             else:
                 if type=='intro':
@@ -158,14 +161,15 @@ class ffmpeg:
                 else:
                     return False
         else:
-            print('Warning: No file selected\nProceeding as no '+type+' video will be included\n')
+            self.logger.error('No file selected')
+            self.logger.warning('Proceeding as no {} video will be included', type)
             return False
 
         return vid
             
     
     def render(self, object, type='generic'):
-        print('Prepareing Transcode of '+type+' video...')
+        self.logger.info('Prepareing Transcode of {} video...', type)
         command = self.mpegPath+' -y '
         command += '-i "'+object['video']['stream']+'" '
         
@@ -215,7 +219,7 @@ class ffmpeg:
         ain += 1
 
         if options['highlight']:
-            print('Sometimes when using the Highlight feature it will download the full video first, so the transcode may be unresponsive while it downloads the video.  Please be patient.')
+            self.logger.warning('Sometimes when using the Highlight feature it will download the full video first, so the transcode may be unresponsive while it downloads the video.  Please be patient.')
 
         # Overlay
         if options['overlay']:
@@ -252,7 +256,7 @@ class ffmpeg:
                 endcardDuration = probe.stdout.decode('utf-8').strip()
                 duration += int(math.ceil(float(endcardDuration)))
             except:
-                print('Unable to parse the endcard for total duration')
+                self.logger.error('Unable to parse the endcard for total duration')
 
         # Main
         if options['trim']:
@@ -342,10 +346,9 @@ class ffmpeg:
         
         functions.ensureFolder(constants.RENDER_LOCATION+type+'/')
 
-        #print(command)
-        print('')
+        self.logger.debug(command)
 
-        print('Starting Transcode...')
+        self.logger.info('Starting Transcode...')
         fps = 0
         frames = 0
         total=100
@@ -377,7 +380,7 @@ class ffmpeg:
             change = total - frames
             pbar.update(change)
         pbar.close()
-        print('Success\n')
+        self.logger.info('Success')
         return True
 
     def qc(self, object, type='generic'):
@@ -391,7 +394,7 @@ class ffmpeg:
                 elif platform.system() == 'Linux':
                     subprocess.run(["xdg-open", constants.RENDER_LOCATION+type+'/'+object['video']['filename']])
                 else:
-                    print('Opening Files for Preview is not supported on '+platform.system)
+                    self.logger.warning('Opening Files for Preview is not supported on {}', platform.system)
 
                 user_input = dialogue.query('Y/N', 'Are you satisfied with the results (Y/n)? ', default='Y')
                 if user_input.casefold().startswith('y'):
@@ -407,7 +410,7 @@ class ffmpeg:
 
     def check(self):
         found = False
-        print('Locating FFmpeg...')
+        self.logger.info('Locating FFmpeg...')
         while True:
             command = self.mpegPath+' -version'
             process = subprocess.Popen(command, shell=True, stdin=subprocess.PIPE,  stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
@@ -448,23 +451,23 @@ class ffmpeg:
                     break
             break
         if found:
-            print('FFmpeg installed\n')
+            self.logger.info('FFmpeg installed')
         else:
-            print('FFmpeg is not installed\n')
+            self.logger.warning('FFmpeg is not installed')
             if platform.system() == 'Windows':
                 zipfile = 'https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip'
                 folder = self.download(zipfile, 'FFmpeg')[0]
-                print('Copying FFmpeg...')
+                self.logger.info('Copying FFmpeg...')
                 functions.copy(constants.APPDATA_FOLDER+'/ffmpeg/'+folder+'bin/ffmpeg.exe', constants.APPDATA_FOLDER+'/ffmpeg/ffmpeg.exe')
-                print('Copying FFprobe...')
+                self.logger.info('Copying FFprobe...')
                 functions.copy(constants.APPDATA_FOLDER+'/ffmpeg/'+folder+'bin/ffprobe.exe', constants.APPDATA_FOLDER+'/ffmpeg/ffprobe.exe')
                 try:
                     shutil.rmtree(constants.APPDATA_FOLDER+'/ffmpeg/'+folder)
                 except:
-                    print('Warning: Could not clean up '+constants.APPDATA_FOLDER+'/ffmpeg/'+folder+'\n')
+                    self.logger.error('Could not clean up {}', constants.APPDATA_FOLDER+'/ffmpeg/'+folder)
                 self.mpegPath = '"'+constants.APPDATA_FOLDER+'/ffmpeg/ffmpeg.exe"'
                 self.probePath = '"'+constants.APPDATA_FOLDER+'/ffmpeg/ffmpeg.exe"'
-                print('FFmpeg and FFprobe installed\n')
+                self.logger.info('FFmpeg and FFprobe installed')
             elif platform.system() == 'Darwin':
                 #FFmpeg
                 zipfile = 'https://evermeet.cx/ffmpeg/ffmpeg-5.1.2.zip'
@@ -474,13 +477,15 @@ class ffmpeg:
                 self.download(zipfile, 'FFprobe')
                 self.mpegPath = '"'+constants.APPDATA_FOLDER+'/ffmpeg/ffmpeg"'
                 self.probePath = '"'+constants.APPDATA_FOLDER+'/ffmpeg/ffmpeg"'
-                print('FFmpeg and FFprobe installed\n')
+                self.logger.info('FFmpeg and FFprobe installed')
             else:
-                print('Cannot automatically install FFmpeg on '+platform.system+'\nManually install FFmpeg and make sure it is accessable via command ffmpeg -version\nVisit https://ffmpeg.org/ for more information')
+                self.logger.error('Cannot automatically install FFmpeg on {}', platform.system)
+                self.logger.info('Manually install FFmpeg and make sure it is accessable via command ffmpeg -version')
+                self.logger.info('Visit https://ffmpeg.org/ for more information')
                 functions.closeTT()
 
     def download(self, url, type):
-        print('Downloading '+type+'...')
+        self.logger.info('Downloading {}...', type)
         dest = constants.APPDATA_FOLDER+'/ffmpeg/'
         functions.ensureFolder(dest)
         response = requests.get(url, stream=True)
@@ -495,11 +500,12 @@ class ffmpeg:
                     pbar.update(len(data))
                     file.write(data)
             pbar.close()
-            print('Success\n')
+            self.logger.info('Success')
             response.close()
         except:
             pbar.close()
-            print('Error downloading '+type+'\nPlease try again later\n')
+            self.logger.error('Error downloading {}', type)
+            self.logger.warning('Please try again later')
             response.close()
             functions.closeTT()
         
@@ -513,16 +519,18 @@ class ffmpeg:
                     pbar.update(f.file_size)
                 pbar.close()
         except:
-            print('Error extracting '+type+'\nPlease try again later\n')
+            self.logger.error('Error extracting {}', type)
+            self.logger.warning('Please try again later')
             functions.closeTT()
 
-        print('Success\n')
+        self.logger.info('Success')
 
-        print('Cleaning Up\n')
+        self.logger.debug('Cleaning Up...')
         try:
             os.remove(dest+'tmp.zip')
+            self.logger.info('Cleaned Up')
         except:
-            print('Warning: Could not clean up temp.zip')
+            self.logger.error('Could not clean up temp.zip')
 
         return files
 

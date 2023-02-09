@@ -1,3 +1,4 @@
+import logging
 import json
 import os
 import re
@@ -12,72 +13,71 @@ from packaging.version import Version
 from tkinter import filedialog
 from util import constants, dialogue
 
+logger = logging.getLogger(__name__)
+
 tkinter.Tk().withdraw()
 
 def ensureAppDataFolder():
     folder = constants.APPDATA_FOLDER
-    #print('Ensuring App Data Folder Exists')
+    logger.debug('Ensuring App Data Folder Exists...')
     if not os.path.exists(folder):
-        print('App Data Folder Does Not Exist')
-        print(f'Creating App Data Folder...')
+        logger.warning('App Data Folder Does Not Exist')
+        logger.debug('Creating App Data Folder...')
 
         try:
             os.makedirs(folder)
-            print(f'Created App Data Folder\n')
+            logger.info('Created App Data Folder')
         except:
-            print('Could not open the App Data Folder\n')
+            logger.error('Could not open the App Data Folder')
             closeTT()
 
     else:
-        #print(f'App Data Folder Exists: {folder}')
+        logger.debug('App Data Folder Exists: {}', folder)
         pass
 
 def ensureFolder(folder):
-    #print('Ensuring App Data Folder Exists')
+    logger.debug('Ensuring Folder Exists | {}', folder)
     if not os.path.exists(folder):
-        print('Folder "'+folder+'" Does Not Exist')
-        print(f'Creating Folder "'+folder+'"...')
+        logger.warning('Folder "{}" Does Not Exist', folder)
+        logger.debug('Creating Folder "{}"...', folder)
 
         try:
             os.makedirs(folder)
-            print(f'Created Folder\n')
+            logger.info('Created Folder')
         except:
-            print('Coud not create Folder\n')
+            logger.error('Coud not create Folder')
             closeTT()
 
     else:
-        #print(f'App Data Folder Exists: {folder}')
+        logger.debug('App Data Folder Exists: {}', folder)
         pass
 
 def saveFile(dest, object):
-    print('Saving '+dest+'...')
+    logger.debug('Saving {}}...', dest)
     file = constants.APPDATA_FOLDER+'/'+dest+'.json'
     ensureAppDataFolder()
 
-    #try:
     with open(file, 'w') as outfile:
 
         json.dump(object, outfile)
-    print(dest.capitalize()+' saved to file\n')
-    #except:
-    #    print('Could not save the '+dest+' to file\n')
+    logger.info('{} saved to file', dest)
 
 def getFile(dest):
-    print('Checking existing '+dest+'...')
+    logger.debug('Checking existing {}...', dest)
     file = constants.APPDATA_FOLDER+'/'+dest+'.json'
     ensureAppDataFolder()
 
     try:
         with open(file) as infile:
             data = json.load(infile)
-        print('Loaded '+dest+'\n')
+        logger.info('Loaded {}', dest)
         return data
     except:
-        print('No '+dest+' found\n')
+        logger.error('File not found | {}', dest)
         return None
 
 def closeTT():
-    print('Exiting TwitchTube...')
+    logger.info('Exiting TwitchTube...')
     sys.exit();
 
 def seconds(duration):
@@ -166,7 +166,7 @@ def copy(src, dst, chunk_size=1024):
                     pbar.update(change)
 
                 pbar.close()
-        print('Success\n')
+        logger.info('Success')
         return True
     except:
         return False
@@ -198,7 +198,7 @@ def setOptions(video, yt_class):
     if yt_class is not None:
         user_input = dialogue.query('Y/N', 'This will only be used on youtube (Y/n) ', default='Y', prePrint='Do you want to include a longer description below the breif description?')
         if user_input.casefold().startswith('y'):
-            print('Checking existing saved description...')
+            logger.debug('Checking existing saved description...')
             file = constants.APPDATA_FOLDER+'/desc.txt'
             if os.path.exists(file):
                 user_input = dialogue.query('Options', 'You have a long description on file, would you like to use it, or view / edit it (USE/edit)? ', default='Use', options=['use', 'edit', 'view'], errorMsg='Please just answer with either use, edit, or view')
@@ -210,14 +210,15 @@ def setOptions(video, yt_class):
                     user_input = dialogue.query('Y/N', 'Confirm that you saved the file (Y/n)? ', default='Y', prePrint='Make sure to save the file and close it before continueing')
                     description = getDesc(file)
             else:
-                print('No saved description\n')
+                logger.warning('No saved description')
                 if createFile(file):
                     subprocess.call(['open', '-e', file])
                     user_input = dialogue.query('Y/N', 'Are you happy with the long desciprtion (Y/n)? ', default='Y')
                     user_input = dialogue.query('Y/N', 'Confirm that you saved the file (Y/n)? ', default='Y', prePrint='Make sure to save the file and close it before continueing')
                     description = getDesc(file)
                 else:
-                    print('Warning: Could not create the description file\nProceeding as no long description will be included\n')
+                    logger.error('Could not create the description file')
+                    logger.warning('Proceeding as no long description will be included')
 
     user_input = dialogue.query('Text', 'Keywords: ', prePrint='Enter keywords for this video, seperate them by , otherwise your going to have a whole mess of issues')
     if user_input:
@@ -232,20 +233,20 @@ def createFile(file):
     try:
         with open(file, 'w') as outfile:
             outfile.write('')
-        print('Desc file created\n')
+        logger.info('{} file created', file)
         return True
     except:
         return False
 
 def getDesc(file):
-    print('Getting saved description...')
+    logger.debug('Getting saved description...')
     try:
         with open(file) as infile:
             data = infile.read()
-        print('Loaded descrption\n')
+        logger.info('Loaded descrption')
         return data
     except:
-        print('Could not get the saved description\n')
+        logger.error('Could not get the saved description')
         return ''
 
 def prefs():
@@ -318,15 +319,15 @@ def settings(channel, prefs):
             prefs[channel]['unique'] = False
 
     if prefs[channel]['enable'] and prefs[channel]['unique']:
-        print('Preferences set to upload a unique version to '+channel+'\n')
+        logger.info('Preferences set to upload a unique version to {}', channel)
     elif prefs[channel]['enable']:
-        print('Preferences set to upload to '+channel+'\n')
+        logger.info('Preferences set to upload to {}', channel)
     else:
-        print('Preferences set to not upload to '+channel+'\n')
+        logger.info('Preferences set to not upload to {}', channel)
     return prefs
 
 def cleanUp():
-    print('Cleaning Up and Removing Previous Renders...')
+    logger.info('Cleaning Up and Removing Previous Renders...')
     if os.path.exists(constants.RENDER_LOCATION):
         items = os.listdir(constants.RENDER_LOCATION)
         for item in items:
@@ -334,28 +335,28 @@ def cleanUp():
             if os.path.isfile(path):       
                 try:
                     os.remove(path)
-                    print(path+' Removed')
+                    logger.info('{} Removed', path)
                 except:
-                    print('Warning: Could Not Delete '+path)
+                    logger.error('Could Not Delete {}', path)
             elif os.path.isdir(path):
                 dir = os.listdir(constants.RENDER_LOCATION+'/'+item)
                 for x in dir:
                     if os.path.isfile(constants.RENDER_LOCATION+'/'+item+'/'+x):       
                         try:
                             os.remove(constants.RENDER_LOCATION+'/'+item+'/'+x)
-                            print(constants.RENDER_LOCATION+'/'+item+'/'+x+' Removed')
+                            logger.info('{} Removed', constants.RENDER_LOCATION+'/'+item+'/'+x)
                         except:
-                            print('Warning: Could Not Delete '+constants.RENDER_LOCATION+'/'+item+'/'+x)
+                            logger.error('Could Not Delete {}', constants.RENDER_LOCATION+'/'+item+'/'+x)
                 try:
                     os.rmdir(constants.RENDER_LOCATION+'/'+item)
-                    print(constants.RENDER_LOCATION+'/'+item+' Removed')
+                    logger.info('{} Removed', constants.RENDER_LOCATION+'/'+item)
                 except:
-                    print('Warning: Could Not Delete '+constants.RENDER_LOCATION+'/'+item)
-    print('Finished\n')
+                    logger.error('Could Not Delete {}', constants.RENDER_LOCATION+'/'+item)
+    logger.info('Finished')
 
 def checkVersion():
-    print('Version: '+constants.VERSION)
-    print('Checking for Updates...')
+    logger.info('Version: {}', constants.VERSION)
+    logger.info('Checking for Updates...')
     
     url = 'https://api.github.com/repos/chrisjameschamp/TwitchTube/releases/latest'
     response = requests.get(url).json()
@@ -364,10 +365,11 @@ def checkVersion():
         curVersion = Version(constants.VERSION)
 
         if gitVersion > curVersion:
-            print('There is a new version of TwitchTube available\nThe Most recent version is '+str(gitVersion))
-            print('Get the latest version by visiting https://github.com/chrisjameschamp/TwitchTube\n')
+            logger.warning('There is a new version of TwitchTube available')
+            logger.info('The Most recent version is {}', gitVersion)
+            logger.info('Get the latest version by visiting https://github.com/chrisjameschamp/TwitchTube')
         else:
-            print('You are up to date\n')
+            logger.info('You are up to date')
 
     else:
-        print('Error Checking for Updates')
+        logger.error('Error Checking for Updates')

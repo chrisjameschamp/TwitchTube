@@ -1,4 +1,3 @@
-import math
 import subprocess
 
 from semantic_version import Version
@@ -19,23 +18,29 @@ nextMajorVersion.minor = 0
 nextMajorVersion.patch = 0
 
 print(f'The current version number is {curVersion}\n')
-print('Select the corresponding number and the option for the next version')
 print(f'  1) Major version: {nextMajorVersion}')
 print(f'  2) Minor version: {nextMinorVersion}')
 print(f'  3) Patch version: {nextPatchVersion}')
-user_input = dialogue.query('Numeric', 'Option: ', min=1, max=3)
-if user_input=='1':
-    nextVersion = nextMajorVersion
-elif user_input=='2':
-    nextVersion = nextMinorVersion
-else:
-    nextVersion = nextPatchVersion
-
-print(f'You have selected {nextVersion} as the next version.')
-user_input = dialogue.query('Y/N', 'Is this correct (Y/n)? ', default='Y')
-
-if user_input.casefold().startswith('n'):
-    exit()
+while True:
+    print('\nSelect the corresponding number next to the next desired version.')
+    user_input = input('>>> ')
+    try:
+        value = int(user_input)
+        if value >= 1 and value <= 3:
+            if value==1:
+                nextVersion = nextMajorVersion
+            elif value==2:
+                nextVersion = nextMinorVersion
+            else:
+                nextVersion = nextPatchVersion
+            print(f'You have selected {nextVersion} as the next version.')
+            print('Confirm (Y/N)?')
+            if input('>>> ').lower() == 'y':
+                break
+        else:
+            print(f'Invalid input, please enter a number between 1 and 3')
+    except ValueError:
+        print(f'Invalid input, please enter a number between 1 and 3')
 
 print('Confirmed')
 version = nextVersion
@@ -63,23 +68,26 @@ with open('pyproject.toml', 'w') as file:
     file.writelines(content)
 
 # Git Update
-user_input = dialogue.query('Y/N', 'Would you like to commit changes to git (Y/n)? ', default='Y')
-if user_input.casefold().startswith('y'):
-    m = dialogue.query('Required', 'Enter a description for this commit: ')
-    m = f'V{version}: {m}'
-    
-    # Add
-    command = 'git add .'
-    process = subprocess.Popen(command, shell=True, stdin=subprocess.PIPE,  stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
-    for line in process.stdout:
-        print(line, end='')
+print('Would you like to commit changes to git (Y/n)?')
+if input('>>> ').lower() == 'n':
+    exit()
 
-    command = f'git commit -m "{m}"'
-    process = subprocess.Popen(command, shell=True, stdin=subprocess.PIPE,  stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
-    for line in process.stdout:
-        print(line, end='')
+print('Required', 'Enter a description for this commit:')
+m = input('>>> ')
+m = f'V{version}: {m}'
 
-    command = 'git push origin main'
-    process = subprocess.Popen(command, shell=True, stdin=subprocess.PIPE,  stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
-    for line in process.stdout:
-        print(line, end='')
+# Add
+command = 'git add .'
+process = subprocess.Popen(command, shell=True, stdin=subprocess.PIPE,  stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
+for line in process.stdout:
+    print(line, end='')
+
+command = f'git commit -m "{m}"'
+process = subprocess.Popen(command, shell=True, stdin=subprocess.PIPE,  stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
+for line in process.stdout:
+    print(line, end='')
+
+command = 'git push origin main'
+process = subprocess.Popen(command, shell=True, stdin=subprocess.PIPE,  stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
+for line in process.stdout:
+    print(line, end='')
