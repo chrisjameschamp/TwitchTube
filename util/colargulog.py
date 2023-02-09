@@ -1,18 +1,19 @@
+import colorama
 import logging
 import logging.handlers
 import re
 
 class ColorCodes:
-    white = "\x1b[38;21m"
-    grey = "\x1b[2m"
-    green = "\x1b[1;32m"
-    yellow = "\x1b[33;21m"
-    red = "\x1b[31;21m"
-    bold_red = "\x1b[31;1m"
-    blue = "\x1b[1;34m"
-    light_blue = "\x1b[1;36m"
-    purple = "\x1b[1;35m"
-    reset = "\x1b[0m"
+    white = colorama.Fore.WHITE + colorama.Style.NORMAL
+    grey = colorama.Fore.WHITE + colorama.Style.DIM
+    green = colorama.Fore.GREEN + colorama.Style.BRIGHT
+    yellow = colorama.Fore.YELLOW + colorama.Style.NORMAL
+    red = colorama.Fore.RED + colorama.Style.NORMAL
+    bold_red = colorama.Fore.RED + colorama.Style.BRIGHT
+    blue = colorama.Fore.BLUE + colorama.Style.NORMAL
+    light_blue = colorama.Fore.LIGHTBLUE_EX + colorama.Style.NORMAL
+    purple = colorama.Fore.MAGENTA + colorama.Style.NORMAL
+    reset = colorama.Fore.RESET + colorama.Style.RESET_ALL
 
 
 class ColorizedArgsFormatter(logging.Formatter):
@@ -35,6 +36,7 @@ class ColorizedArgsFormatter(logging.Formatter):
 
     def __init__(self, fmt: str, datefmt=None):
         super().__init__()
+        colorama.init()
         self.level_to_formatter = {}
 
         def add_color_format(level: int):

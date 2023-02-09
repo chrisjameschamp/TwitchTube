@@ -186,7 +186,8 @@ def setOptions(video, yt_class):
     keywords = []
     youtube_category = ''
     privacy = 'private'
-    user_input = dialogue.query('Y/N', 'Do you wish to keep that title (Y/n)? ', default='Y', prePrint='The title of this video from Twitch is "'+video['title']+'"')
+    logger.info('The title of this video from Twitch is "{}}"', video['title'])
+    user_input = dialogue.query('Y/N', 'Do you wish to keep that title (Y/n)? ', default='Y')
     if user_input.casefold().startswith('y'):
         title = video['title']
     else:
@@ -196,7 +197,8 @@ def setOptions(video, yt_class):
     shortDesc = dialogue.query('Text', 'Enter a breif description for this specific video: ')
 
     if yt_class is not None:
-        user_input = dialogue.query('Y/N', 'This will only be used on youtube (Y/n) ', default='Y', prePrint='Do you want to include a longer description below the breif description?')
+        logger.info('Do you want to include a longer description below the breif description?')
+        user_input = dialogue.query('Y/N', 'This will only be used on youtube (Y/n) ', default='Y')
         if user_input.casefold().startswith('y'):
             logger.debug('Checking existing saved description...')
             file = constants.APPDATA_FOLDER+'/desc.txt'
@@ -207,20 +209,23 @@ def setOptions(video, yt_class):
                 else:
                     subprocess.call(['open', '-e', file])
                     user_input = dialogue.query('Y/N', 'Are you happy with the long desciprtion (Y/n)? ', default='Y')
-                    user_input = dialogue.query('Y/N', 'Confirm that you saved the file (Y/n)? ', default='Y', prePrint='Make sure to save the file and close it before continueing')
+                    logger.info('Make sure to save the file and close it before continueing')
+                    user_input = dialogue.query('Y/N', 'Confirm that you saved the file (Y/n)? ', default='Y')
                     description = getDesc(file)
             else:
                 logger.warning('No saved description')
                 if createFile(file):
                     subprocess.call(['open', '-e', file])
                     user_input = dialogue.query('Y/N', 'Are you happy with the long desciprtion (Y/n)? ', default='Y')
-                    user_input = dialogue.query('Y/N', 'Confirm that you saved the file (Y/n)? ', default='Y', prePrint='Make sure to save the file and close it before continueing')
+                    logger.info('Make sure to save the file and close it before continueing')
+                    user_input = dialogue.query('Y/N', 'Confirm that you saved the file (Y/n)? ', default='Y')
                     description = getDesc(file)
                 else:
                     logger.error('Could not create the description file')
                     logger.warning('Proceeding as no long description will be included')
 
-    user_input = dialogue.query('Text', 'Keywords: ', prePrint='Enter keywords for this video, seperate them by , otherwise your going to have a whole mess of issues')
+    logger.info('Enter keywords for this video, seperate them by , otherwise your going to have a whole mess of issues')
+    user_input = dialogue.query('Text', 'Keywords: ')
     if user_input:
         keywords = list(map(str.strip, user_input.split(',')))
 
@@ -267,17 +272,20 @@ def prefs():
 def settings(channel, prefs):
     if channel in prefs:
         if prefs[channel]['enable']:
-            user_input = dialogue.query('Y/N', 'Would you like to continue to upload to '+channel+' (Y/n)? ', default='Y', prePrint='Your current preference is to upload to '+channel+'.')
+            logger.info('Your current preference is to upload to {}', channel)
+            user_input = dialogue.query('Y/N', f'Would you like to continue to upload to {channel} (Y/n)? ', default='Y')
             if user_input.casefold().startswith('y'):
                 prefs[channel]['enable'] = True
                 if prefs[channel]['unique']:
-                    user_input = dialogue.query('Y/N', 'Would you like to continue to upload a unique version to '+channel+' (Y/n)? ', default='Y', prePrint='Your current preference is to upload a unique version to '+channel+'.')
+                    logger.info('Your current preference is to upload a unique version to {}', channel)
+                    user_input = dialogue.query('Y/N', f'Would you like to continue to upload a unique version to {channel} (Y/n)? ', default='Y')
                     if user_input.casefold().startswith('y'):
                         prefs[channel]['unique'] = True
                     else:
                         prefs[channel]['unique'] = False
                 else:
-                    user_input = dialogue.query('Y/N', 'Would you like to continue to NOT upload a unique version to '+channel+' (Y/n)? ', default='Y', prePrint='Your current preference is to NOT upload a unique version to '+channel+'.')
+                    logger.info('Your current preference is to NOT upload a unique version to {}', channel)
+                    user_input = dialogue.query('Y/N', f'Would you like to continue to NOT upload a unique version to {channel} (Y/n)? ', default='Y')
                     if user_input.casefold().startswith('y'):
                         prefs[channel]['unique'] = False
                     else:
@@ -286,17 +294,20 @@ def settings(channel, prefs):
                 prefs[channel]['enable'] = False
                 prefs[channel]['unique'] = False
         else:
-            user_input = dialogue.query('Y/N', 'Would you like to continue to NOT upload to '+channel+' (Y/n)? ', default='Y', prePrint='Your current preference is to NOT upload to '+channel)
+            logger.info('Your current preference is to NOT upload to {}', channel)
+            user_input = dialogue.query('Y/N', f'Would you like to continue to NOT upload to {channel} (Y/n)? ', default='Y')
             if user_input.casefold().startswith('n'):
                 prefs[channel]['enable'] = True
                 if prefs[channel]['unique']:
-                    user_input = dialogue.query('Y/N', 'Would you like to continue to upload a unique version to '+channel+' (Y/n)? ', default='Y', prePrint='Your current preference is to upload a unique version to '+channel)
+                    logger.info('Your current preference is to upload a unique version to {}', channel)
+                    user_input = dialogue.query('Y/N', f'Would you like to continue to upload a unique version to {channel} (Y/n)? ', default='Y')
                     if user_input.casefold().startswith('y'):
                         prefs[channel]['enable'] = True
                     else:
                         prefs[channel]['enable'] = False
                 else:
-                    user_input = dialogue.query('Y/N', 'Would you like to continue to NOT upload a unique version to '+channel+' (Y/n)? ', default='Y', prePrint='Your current preference is to NOT upload a unique version to '+channel)
+                    logger.info('Your current preference is to NOT upload a unique version to {}', channel)
+                    user_input = dialogue.query('Y/N', f'Would you like to continue to NOT upload a unique version to {channel} (Y/n)? ', default='Y')
                     if user_input.casefold().startswith('y'):
                         prefs[channel]['unique'] = False
                     else:
@@ -306,10 +317,10 @@ def settings(channel, prefs):
                 prefs[channel]['unique'] = False
     else:
         prefs[channel] = {'enable': False, 'unique': False}
-        user_input = dialogue.query('Y/N', 'Would you like to upload to '+channel+' (Y/n)? ', default='Y')
+        user_input = dialogue.query('Y/N', f'Would you like to upload to {channel} (Y/n)? ', default='Y')
         if user_input.casefold().startswith('y'):
             prefs[channel]['enable'] = True
-            user_input = dialogue.query('Y/N', 'Would you like to upload a unique, specific to '+channel+' version (y/N)? ', default='N')
+            user_input = dialogue.query('Y/N', f'Would you like to upload a unique, specific to {channel} version (y/N)? ', default='N')
             if user_input.casefold().startswith('y'):
                 prefs[channel]['unique'] = True
             else:

@@ -27,17 +27,18 @@ class ffmpeg:
 
         highlight = None
         if options and 'highlight' in options and options['highlight']:
-            user_input = dialogue.query('Y/N', 'Would you like to use the same highlight (Y/n)? ', default='Y', prePrint='The generic version uses a highlight at the beginning starting at '+functions.time(options['highlight']['start'])+' and ending at '+functions.time(options['highlight']['end']))
+            self.logger.info('The generic version uses a highlight at the beginning starting at {} and ending at {}', functions.time(options['highlight']['start']), functions.time(options['highlight']['end']))
+            user_input = dialogue.query('Y/N', 'Would you like to use the same highlight (Y/n)? ', default='Y')
             if user_input.casefold().startswith('y'):
                 highlight = options['highlight']
             else:
-                user_input = dialogue.query('Y/N', 'Would you like to include a highlight at the start of the '+channel+' video (y/N)? ', default='N')
+                user_input = dialogue.query('Y/N', f'Would you like to include a highlight at the start of the {channel} video (y/N)? ', default='N')
                 if user_input.casefold().startswith('y'):
                     start = dialogue.query('Time', 'Enter the time into the video where you want the highlight to start (12m4s): ')
                     end = dialogue.query('Time', 'Enter the time into the video where you want the highlight to stop (1m15s): ')
                     highlight = {'start': start, 'end': end}
         else:
-            user_input = dialogue.query('Y/N', 'Would you like to include a highlight at the start of the '+channel+' video (y/N)? ', default='N')
+            user_input = dialogue.query('Y/N', f'Would you like to include a highlight at the start of the {channel} video (y/N)? ', default='N')
             if user_input.casefold().startswith('y'):
                 start = dialogue.query('Time', 'Enter the time into the video where you want the highlight to start (12m4s): ')
                 end = dialogue.query('Time', 'Enter the time into the video where you want the highlight to stop (1m15s): ')
@@ -45,17 +46,18 @@ class ffmpeg:
 
         trim = None
         if options and 'trim' in options and options['trim']:
-            user_input = dialogue.query('Y/N', 'Would you like to trim the same amount (Y/n)? ', default='Y', prePrint='The generic version trims the length from '+functions.time(options['trim']['start'])+' to '+functions.time(options['trim']['end']))
+            self.logger.info('The generic version trims the length from {} to {}', functions.time(options['trim']['start']), functions.time(options['trim']['end']))
+            user_input = dialogue.query('Y/N', 'Would you like to trim the same amount (Y/n)? ', default='Y')
             if user_input.casefold().startswith('y'):
                 trim = options['trim']
             else:
-                user_input = dialogue.query('Y/N', 'Would you like to change the in / out points of the '+channel+' video (y/N)? ', default='N')
+                user_input = dialogue.query('Y/N', f'Would you like to change the in / out points of the {channel} video (y/N)? ', default='N')
                 if user_input.casefold().startswith('y'):
                     start = dialogue.query('Time', 'Enter the time into the video where you want it to start (12m4s): ')
                     end = dialogue.query('Time', 'Enter the time into the video where you want it to end (1m15s): ')
                     trim = {'start': start, 'end': end}
         else:
-            user_input = dialogue.query('Y/N', 'Would you like to change the in / out points of the '+channel+' video (y/N)? ', default='N')
+            user_input = dialogue.query('Y/N', f'Would you like to change the in / out points of the {channel} video (y/N)? ', default='N')
             if user_input.casefold().startswith('y'):
                 start = dialogue.query('Time', 'Enter the time into the video where you want it to start (12m4s): ')
                 end = dialogue.query('Time', 'Enter the time into the video where you want it to end (1m15s): ')
@@ -63,43 +65,46 @@ class ffmpeg:
         
         introVid = None
         if options and 'intro' in options and options['intro']:
-            user_input = dialogue.query('Y/N', 'Would you like to use the same one (Y/n)? ', default='Y', prePrint='The generic version uses an intro video at the beginning')
+            self.logger.info('The generic version uses an intro video at the beginning')
+            user_input = dialogue.query('Y/N', 'Would you like to use the same one (Y/n)? ', default='Y')
             if user_input.casefold().startswith('y'):
                 introVid = options['intro']
             else:
-                user_input = dialogue.query('Y/N', 'Would you like to include an intro video at the beginning of the '+channel+' video (Y/n)? ', default='Y')
+                user_input = dialogue.query('Y/N', f'Would you like to include an intro video at the beginning of the {channel} video (Y/n)? ', default='Y')
                 if user_input.casefold().startswith('y'):
                     introVid = self.getVid(channel, 'intro')
         else:
-            user_input = dialogue.query('Y/N', 'Would you like to include an intro video at the beginning of the '+channel+' video (Y/n)? ', default='Y')
+            user_input = dialogue.query('Y/N', f'Would you like to include an intro video at the beginning of the {channel} video (Y/n)? ', default='Y')
             if user_input.casefold().startswith('y'):
                 introVid = self.getVid(channel, 'intro')
 
         overlayVid = None
         if options and 'overlay' in options and options['overlay']:
-            user_input = dialogue.query('Y/N', 'Would you like to use the same one (Y/n)? ', default='Y', prePrint='The generic version uses a CTA / Subscribe overlay')
+            self.logger.info('The generic version uses a CTA / Subscribe overlay')
+            user_input = dialogue.query('Y/N', 'Would you like to use the same one (Y/n)? ', default='Y')
             if user_input.casefold().startswith('y'):
                 overlayVid = options['overlay']
             else:
-                user_input = dialogue.query('Y/N', 'Would you like to include a CTA / Subscribe overlay in the '+channel+' video (Y/n)? ', default='Y')
+                user_input = dialogue.query('Y/N', f'Would you like to include a CTA / Subscribe overlay in the {channel} video (Y/n)? ', default='Y')
                 if user_input.casefold().startswith('y'):
                     overlayVid = self.getVid(channel, 'overlay')
         else:
-            user_input = dialogue.query('Y/N', 'Would you like to include a CTA / Subscribe overlay in the '+channel+' video (Y/n)? ', default='Y')
+            user_input = dialogue.query('Y/N', f'Would you like to include a CTA / Subscribe overlay in the {channel} video (Y/n)? ', default='Y')
             if user_input.casefold().startswith('y'):
                 overlayVid = self.getVid(channel, 'overlay')
 
         endVid = None
         if options and 'endcard' in options and options['endcard']:
-            user_input = dialogue.query('Y/N', 'Would you like to use the same one (Y/n)? ', default='Y', prePrint='The generic version uses an Endcard')
+            self.logger.info('The generic version uses an Endcard')
+            user_input = dialogue.query('Y/N', 'Would you like to use the same one (Y/n)? ', default='Y')
             if user_input.casefold().startswith('y'):
                 endVid = options['endcard']
             else:
-                user_input = dialogue.query('Y/N', 'Would you like to include an endcard in the '+channel+' video (Y/n)? ', default='Y')
+                user_input = dialogue.query('Y/N', f'Would you like to include an endcard in the {channel} video (Y/n)? ', default='Y')
                 if user_input.casefold().startswith('y'):
                     endVid = self.getVid(channel, 'end')
         else:
-            user_input = dialogue.query('Y/N', 'Would you like to include an endcard in the '+channel+' video (Y/n)? ', default='Y')
+            user_input = dialogue.query('Y/N', f'Would you like to include an endcard in the {channel} video (Y/n)? ', default='Y')
             if user_input.casefold().startswith('y'):
                 endVid = self.getVid(channel, 'end')
 
@@ -109,11 +114,14 @@ class ffmpeg:
         vid = functions.getFile(channel+'/'+type+'Vid')
         if vid:
             if type=='intro':
-                user_input = dialogue.query('Y/N', 'Would you like to reuse this '+type+' file (Y/n)? ', default='Y', prePrint='There is an '+type+' video on file. "'+vid['file']+'" with a defined length of '+vid['length']+'s and an offset of '+vid['offset']+'s')
+                self.logger.info('There is an {} video on file. "{}" with a defined length of {}s and an offset of {}s', type, vid['file'], vid['length'], vid['offset'])
+                user_input = dialogue.query('Y/N', f'Would you like to reuse this {type} file (Y/n)? ', default='Y')
             elif type=='end':
-                user_input = dialogue.query('Y/N', 'Would you like to reuse this '+type+' file (Y/n)? ', default='Y', prePrint='There is an '+type+' video on file. "'+vid['file']+'" with an offset of '+vid['offset']+'s')
+                self.logger.info('There is an {} video on file. "{}" with an offset of {}s', type, vid['file'], vid['offset'])
+                user_input = dialogue.query('Y/N', f'Would you like to reuse this {type} file (Y/n)? ', default='Y')
             elif type=='overlay':
-                user_input = dialogue.query('Y/N', 'Would you like to reuse this '+type+' file (Y/n)? ', default='Y', prePrint='There is an '+type+' video on file. "'+vid['file']+'"')
+                self.logger.info('There is an {} video on file. "{}"', type, vid['file'])
+                user_input = dialogue.query('Y/N', f'Would you like to reuse this {type} file (Y/n)? ', default='Y')
             else:
                 return False
 
@@ -385,7 +393,7 @@ class ffmpeg:
 
     def qc(self, object, type='generic'):
         while True:
-            user_input = dialogue.query('Y/N', 'Would you like watch the resulting '+type+' video to check it (Y/n)? ', default='Y')
+            user_input = dialogue.query('Y/N', f'Would you like watch the resulting {type} video to check it (Y/n)? ', default='Y')
             if user_input.casefold().startswith('y'):
                 if platform.system() == 'Windows':
                     subprocess.run(['start', constants.RENDER_LOCATION+type+'/'+object['video']['filename']], shell=True)

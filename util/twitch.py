@@ -27,18 +27,21 @@ class twitch:
         if creds is not None and 'client_id' in creds:
             self.client_id = creds['client_id']
         else:
-            self.client_id = dialogue.query('Required', 'Twitch Client ID: ', prePrint='Enter the Twitch Client ID for you app.  If you do not have a Client ID visit https://dev.twitch.tv/docs/api')
+            self.logger.info('Enter the Twitch Client ID for you app. If you do not have a Client ID visit https://dev.twitch.tv/docs/api')
+            self.client_id = dialogue.query('Required', 'Twitch Client ID: ')
 
         if creds is not None and 'oauth' in creds:
             self.oauth = creds['oauth']
         else:
-            self.oauth = 'Bearer '+dialogue.query('Required', 'Twitch Oauth Code: Bearer ', prePrint='Enter the Twitch Oauth code.  If you do not have an Oauth code visit https://twitchapps.com/tokengen/')
+            self.logger.info('Enter the Twitch Oauth code.  If you do not have an Oauth code visit https://twitchapps.com/tokengen/')
+            self.oauth = 'Bearer '+dialogue.query('Required', 'Twitch Oauth Code: Bearer ')
 
         if creds is not None and 'channel' in creds:
             self.channel = creds['channel']
         else:
             self.logger.info('Ok so we have a Client ID and an Authorization code to access data from Twtich')
-            self.channel = dialogue.query('Required', 'Channel Name: ', prePrint='Enter the Channel Name you would like to download videos from')
+            self.logger.info('Enter the Channel Name you would like to download videos from')
+            self.channel = dialogue.query('Required', 'Channel Name: ')
 
     def testCredentials(self, creds):
         self.logger.debug('Testing credentials...')
@@ -67,7 +70,8 @@ class twitch:
         user_input = dialogue.query('Y/N', 'Would you like to keep using that Channel (Y/n)? ', default='Y')
         if user_input.casefold().startswith('n'):
             creds = functions.getFile(constants.TWITCH_CREDS_FILE)
-            self.channel = dialogue.query('Required', 'Channel Name: ', prePrint='Enter the Channel Name you would like to download videos from')
+            self.logger('Enter the Channel Name you would like to download videos from')
+            self.channel = dialogue.query('Required', 'Channel Name: ')
             creds['channel'] = self.channel
 
             self.testCredentials(creds)

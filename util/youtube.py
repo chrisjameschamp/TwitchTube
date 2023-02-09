@@ -178,7 +178,7 @@ class youtube:
 
         if object['meta']['keywords']:
             for keyword in object['meta']['keywords']:
-                description += '#'+keyword+' '
+                description += f'#{keyword} '
 
         body=dict(
             snippet=dict(

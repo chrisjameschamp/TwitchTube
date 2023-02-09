@@ -16,9 +16,9 @@ def query(type, question, min=0, max=0, prePrint='', default='', errorMsg='', op
         while True:
             logger.info(question)
             if default:
-                user_input = input('               >>> ') or default
+                user_input = input('>>> ') or default
             else:
-                user_input = input('               >>> ')
+                user_input = input('>>> ')
 
             # Yes or No Answers
             if type == 'Y/N':
