@@ -25,6 +25,13 @@ class ColorizedArgsFormatter(logging.Formatter):
         logging.ERROR: ColorCodes.red,
         logging.CRITICAL: ColorCodes.bold_red,
     }
+    level_names = {
+        logging.DEBUG: "DBUG",
+        logging.INFO: "INFO",
+        logging.WARNING: "WARN",
+        logging.ERROR: "ERRR",
+        logging.CRITICAL: "CRIT"
+    }
 
     def __init__(self, fmt: str, datefmt=None):
         super().__init__()
@@ -75,7 +82,7 @@ class ColorizedArgsFormatter(logging.Formatter):
     def format(self, record):
         orig_msg = record.msg
         orig_args = record.args
-        record.levelname = record.levelname.center(8)
+        record.levelname = record.levelname.upper()
         formatter = self.level_to_formatter.get(record.levelno)
         self.rewrite_record(record)
         formatted = formatter.format(record)
@@ -120,6 +127,7 @@ class BraceFormatStyleFormatter(logging.Formatter):
     def format(self, record):
         orig_msg = record.msg
         orig_args = record.args
+        record.levelname = record.levelname.upper()
         self.rewrite_record(record)
         formatted = self.formatter.format(record)
         
