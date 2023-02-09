@@ -20,6 +20,8 @@ from util import constants, dialogue, functions
 
 logger = logging.getLogger(__name__)
 
+logging.getLogger('googleapicliet.discovery_cache').setLevel(logging.ERROR)
+
 # Explicitly tell the underlying HTTP transport library not to retry, since
 # we are handling retry logic ourselves.
 httplib2.RETRIES = 1
@@ -152,7 +154,7 @@ class youtube:
             http=credentials.authorize(httplib2.Http()), static_discovery=False)
 
     def upload(self, object):
-        self.youtube = self.get_authenticated_service()
+        #self.youtube = self.get_authenticated_service()
         logger.info('Preparing Upload...')
         try:
             self.initialize_upload(object)

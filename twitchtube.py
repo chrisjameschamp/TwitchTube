@@ -6,7 +6,7 @@ import util
 
 from util import colargulog, constants, dialogue, functions, streamlink
 
-DEBUG = True
+DEBUG = False
 
 class twitchTube:
     def __init__(self):
