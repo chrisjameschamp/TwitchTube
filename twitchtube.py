@@ -103,6 +103,8 @@ class twitchTube:
 if __name__ == '__main__':
     if len(sys.argv) > 1 and sys.argv[1] == '--debug':
         DEBUG = True
+
+    multiprocessing.freeze_support()
     
     # SETUP LOG LEVEL - DEBUG: debug message | INFO: info message | WARNING: warn message | ERROR: error message
     console_handler = logging.StreamHandler(stream=sys.stdout)
@@ -119,5 +121,11 @@ if __name__ == '__main__':
         logging.getLogger().setLevel(logging.DEBUG)
         logger.debug('-------------------DEBUG ACTIVE-------------------')
 
-    multiprocessing.freeze_support()
-    twitchTube()
+    try:
+        twitchTube()
+    except Exception as e:
+        logger.error('{}', e)
+    except KeyboardInterrupt:
+        logger.info('Exiting...')
+    finally:
+        sys.exit()
