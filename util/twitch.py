@@ -14,16 +14,19 @@ class twitch:
         self.getCredentials()
 
     def getCredentials(self):
-        creds = functions.getFile(constants.TWITCH_CREDS_FILE)
+        # Compiled Credentials - if the application is bundled and the user is downloading an executable file, this should get the credentials no problem
+        try:
+            import creds
+            self.client_id = creds.TWITCH_CLIENT_ID
+            self.oauth = creds.TWITCH_OAUTH
+        except:
+            self.logger.warn('Pre Packaged Credentials Missing')
+            creds = functions.getFile(constants.TWITCH_CREDS_FILE)
+            self.manualCredentials(creds)
+            creds = {'client_id': self.client_id, 'oauth': self.oauth}
+            functions.saveFile(constants.TWITCH_CREDS_FILE, creds)
 
-        self.enterCredentials(creds)
-
-        self.testCredentials(creds)
-
-        creds = {'client_id': self.client_id, 'oauth': self.oauth, 'channel': self.channel, 'channel_id': self.channel_id}
-        functions.saveFile(constants.TWITCH_CREDS_FILE, creds)
-
-    def enterCredentials(self, creds):
+    def manualCredentials(self, creds):
         if creds is not None and 'client_id' in creds:
             self.client_id = creds['client_id']
         else:
@@ -36,47 +39,39 @@ class twitch:
             self.logger.info('Enter the Twitch Oauth code.  If you do not have an Oauth code visit https://twitchapps.com/tokengen/')
             self.oauth = 'Bearer '+dialogue.query('Required', 'Twitch Oauth Code: Bearer ')
 
-        if creds is not None and 'channel' in creds:
-            self.channel = creds['channel']
-        else:
-            self.logger.info('Ok so we have a Client ID and an Authorization code to access data from Twtich')
-            self.logger.info('Enter the Channel Name you would like to download videos from')
-            self.channel = dialogue.query('Required', 'Channel Name: ')
+    def enterChannel(self):
+        channel = functions.getFile(constants.TWITCH_CHANNEL_FILE)
+        if channel is not None and 'channel' in channel:
+            self.logger.info('On file the Twitch Channel you would like to download videos from is: {}', channel['channel'])
+            user_input = dialogue.query('Y/N', 'Would you like to keep using that Channel (Y/n)? ', default='Y')
+            if user_input.casefold().startswith('y'):
+                self.channel = channel['channel']
+                return True
+        self.logger.info('Enter the Channel Name you would like to download videos from')
+        self.channel = dialogue.query('Required', 'Channel Name: ')
+        functions.saveFile(constants.TWITCH_CHANNEL_FILE, {'channel': self.channel})
 
-    def testCredentials(self, creds):
+    def testCredentials(self):
         self.logger.debug('Testing credentials...')
         
         try:
-            while True:
-                result = self.getTwitchData(constants.TWITCH_USERINFO+self.channel)
-                if 'error' in result or not result['data']:
-                    if 'error' in result:
-                        self.logger.error('{} {}', result['status'], result['message'])
-                    self.logger.warning('Please verify the supplied credentials and try again')
-
-                    self.enterCredentials(creds)
-                else:
-                    self.logger.info('Success!')
-                    self.channel_id = result['data'][0]['id']
-                    break
+            result = self.getTwitchData(constants.TWITCH_USERINFO+self.channel)
+            if 'error' in result or not result['data']:
+                if 'error' in result:
+                    self.logger.error('{} {}', result['status'], result['message'])
+                self.logger.warning('Please verify the supplied credentials and try again later')
+                functions.clostTT()
+            else:
+                self.logger.debug('Success!')
+                self.channel_id = result['data'][0]['id']
         except:
             self.logger.error('Error connecting to network to test credentials')
             self.logger.warning('Please try again later')
             functions.closeTT()
 
     def getVideos(self):
-
-        self.logger.info('On file the Twitch Channel you would like to download videos from is: {}', self.channel)
-        user_input = dialogue.query('Y/N', 'Would you like to keep using that Channel (Y/n)? ', default='Y')
-        if user_input.casefold().startswith('n'):
-            creds = functions.getFile(constants.TWITCH_CREDS_FILE)
-            self.logger('Enter the Channel Name you would like to download videos from')
-            self.channel = dialogue.query('Required', 'Channel Name: ')
-            creds['channel'] = self.channel
-
-            self.testCredentials(creds)
-
-            functions.saveFile(constants.TWITCH_CREDS_FILE, creds)
+        self.enterChannel()
+        self.testCredentials()
 
         self.logger.info('Getting recent highlights from Twitch for user: {}...', self.channel)
         videos = self.getTwitchData(constants.TWITCH_VIDEOS+self.channel_id)

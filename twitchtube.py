@@ -19,8 +19,8 @@ class twitchTube:
         self.twitch = util.twitch()
         self.ffmpeg = util.ffmpeg(self.location)
         self.ffmpeg.check()
-        if self.preferences['youtube']['enable']:
-            self.youtube = util.youtube()
+        ##if self.preferences['youtube']['enable']:
+        ##    self.youtube = util.youtube()
         self.chooseVideo()
 
     def chooseVideo(self):

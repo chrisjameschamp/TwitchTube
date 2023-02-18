@@ -2,7 +2,7 @@ import os
 
 from appdirs import *
 
-VERSION = '1.9.5'
+VERSION = '1.9.6'
 
 # App Data Folder
 APPDATA_FOLDER = user_data_dir('TwitchTube', 'ChrisJamesChamp')
@@ -16,6 +16,7 @@ TERMINAL_DATE_FMT = '%H:%M:%S'
 
 # Twitch
 TWITCH_CREDS_FILE = 'twitch_credentials'
+TWITCH_CHANNEL_FILE = 'twitch_channel'
 TWITCH_USERINFO = 'https://api.twitch.tv/helix/users?login='
 TWITCH_VIDEO = 'https://api.twitch.tv/helix/videos?id='
 TWITCH_VIDEOS = 'https://api.twitch.tv/helix/videos?user_id='

@@ -67,6 +67,17 @@ for i, line in enumerate(content):
 with open('pyproject.toml', 'w') as file:
     file.writelines(content)
 
+# Update .vscode
+with open('.vscode/launch.json', 'r') as file:
+    content = file.readlines()
+
+for i, line in enumerate(content):
+    if line.startswith('    "version"'):
+        content[i] = f'    "version": "{version}",\n'
+
+with open('.vscode/launch.json', 'w') as file:
+    file.writelines(content)
+
 # Git Update
 print('Would you like to commit changes to git (Y/n)?')
 if input('>>> ').lower() == 'n':
