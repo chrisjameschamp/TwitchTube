@@ -38,22 +38,22 @@ def ensureAppDataFolder():
 def ensureFolder(folder):
     logger.debug('Ensuring Folder Exists | {}', folder)
     if not os.path.exists(folder):
-        logger.warning('Folder "{}" Does Not Exist', folder)
-        logger.debug('Creating Folder "{}"...', folder)
+        logger.debug('Folder Does Not Exist | "{}"', folder)
+        logger.debug('Creating Folder | "{}"...', folder)
 
         try:
             os.makedirs(folder)
-            logger.info('Created Folder')
+            logger.debug('Created Folder | "{}"', folder)
         except:
-            logger.error('Coud not create Folder')
+            logger.error('Coud not create Folder | "{}"', folder)
             closeTT()
 
     else:
-        logger.debug('App Data Folder Exists: {}', folder)
+        logger.debug('Folder Exists | "{}"', folder)
         pass
 
 def saveFile(dest, object):
-    logger.debug('Saving {}}...', dest)
+    logger.debug('Saving {}...', dest)
     file = constants.APPDATA_FOLDER+'/'+dest+'.json'
     ensureAppDataFolder()
 
@@ -186,7 +186,7 @@ def setOptions(video, yt_class):
     keywords = []
     youtube_category = ''
     privacy = 'private'
-    logger.info('The title of this video from Twitch is "{}}"', video['title'])
+    logger.info('The title of this video from Twitch is "{}"', video['title'])
     user_input = dialogue.query('Y/N', 'Do you wish to keep that title (Y/n)? ', default='Y')
     if user_input.casefold().startswith('y'):
         title = video['title']
@@ -338,7 +338,7 @@ def settings(channel, prefs):
     return prefs
 
 def cleanUp():
-    logger.info('Cleaning Up and Removing Previous Renders...')
+    logger.debug('Cleaning Up and Removing Previous Renders...')
     if os.path.exists(constants.RENDER_LOCATION):
         items = os.listdir(constants.RENDER_LOCATION)
         for item in items:
@@ -346,7 +346,7 @@ def cleanUp():
             if os.path.isfile(path):       
                 try:
                     os.remove(path)
-                    logger.info('{} Removed', path)
+                    logger.debug('{} Removed', path)
                 except:
                     logger.error('Could Not Delete {}', path)
             elif os.path.isdir(path):
@@ -355,15 +355,15 @@ def cleanUp():
                     if os.path.isfile(constants.RENDER_LOCATION+'/'+item+'/'+x):       
                         try:
                             os.remove(constants.RENDER_LOCATION+'/'+item+'/'+x)
-                            logger.info('{} Removed', constants.RENDER_LOCATION+'/'+item+'/'+x)
+                            logger.debug('{} Removed', constants.RENDER_LOCATION+'/'+item+'/'+x)
                         except:
                             logger.error('Could Not Delete {}', constants.RENDER_LOCATION+'/'+item+'/'+x)
                 try:
                     os.rmdir(constants.RENDER_LOCATION+'/'+item)
-                    logger.info('{} Removed', constants.RENDER_LOCATION+'/'+item)
+                    logger.debug('{} Removed', constants.RENDER_LOCATION+'/'+item)
                 except:
                     logger.error('Could Not Delete {}', constants.RENDER_LOCATION+'/'+item)
-    logger.info('Finished')
+    logger.debug('Finished')
 
 def checkVersion():
     logger.info('Version: {}', constants.VERSION)

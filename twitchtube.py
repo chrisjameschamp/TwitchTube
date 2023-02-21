@@ -19,8 +19,8 @@ class twitchTube:
         self.twitch = util.twitch()
         self.ffmpeg = util.ffmpeg(self.location)
         self.ffmpeg.check()
-        ##if self.preferences['youtube']['enable']:
-        ##    self.youtube = util.youtube()
+        if self.preferences['youtube']['enable']:
+            self.youtube = util.youtube()
         self.chooseVideo()
 
     def chooseVideo(self):
@@ -33,6 +33,7 @@ class twitchTube:
         self.object['options'] = self.ffmpeg.setOptions()
         if self.object['youtube']['unique']:
             self.object['youtube']['options'] = self.ffmpeg.setOptions(channel='youtube', options=self.object['options'])
+        self.object['youtube']['rendered'] = False
         self.renderVideo()
 
     def renderVideo(self):
@@ -48,15 +49,16 @@ class twitchTube:
             self.ffmpeg.render(self.object)
             self.object['rendered'] = True
             
-        if self.object['youtube']['enable']:
+        if self.object['youtube']['enable'] and self.object['youtube']['unique']:
             self.ffmpeg.render(self.object, type='youtube')
+            self.object['youtube']['rendered'] = True
         self.qcVideo()
 
     def qcVideo(self):
         if self.object['rendered']:
             if not self.ffmpeg.qc(self.object):
                 self.chooseVideo()
-        if self.object['youtube']['enable']:
+        if self.object['youtube']['enable'] and self.object['youtube']['rendered']:
             if not self.ffmpeg.qc(self.object, type='youtube'):
                 self.chooseVideo()
         self.metadata()
@@ -64,7 +66,6 @@ class twitchTube:
     def metadata(self):
         if self.object['youtube']['enable']:
             self.object['meta'] = functions.setOptions(self.object['video'], self.youtube)
-        if self.object['youtube']['enable']:
             self.uploadVideo()
         else:
             self.cleanUp()
@@ -82,7 +83,7 @@ class twitchTube:
                 folder_path = functions.selectDestFolder()
                 filename, ext = os.path.splitext(self.object['video']['filename'])
                 functions.copy(constants.RENDER_LOCATION+'generic/'+self.object['video']['filename'], folder_path+'/'+filename+'_gen'+ext, chunk_size=1024)
-        if self.object['youtube']['enable']:
+        if self.object['youtube']['enable'] and self.object['youtube']['rendered']:
             user_input = dialogue.query('Y/N', 'Would you like to save a copy of the youtube rendered video to your computer (y/N)? ', default='N')
             if user_input.casefold().startswith('y'):
                 self.logger.info('Please select the destination folder...')

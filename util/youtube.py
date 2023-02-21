@@ -5,6 +5,7 @@ import mimetypes
 import os
 import random
 import requests
+import sys
 import time
 import tqdm
 
@@ -79,40 +80,49 @@ class youtube:
         self.creds = {}
         self.apiKey = None
         self.uploadLocation = constants.RENDER_LOCATION+'/youtube/'
+        self.genericUploadLocation = constants.RENDER_LOCATION+'/generic/'
 
         self.verifyCredentials()
         self.youtube = self.get_authenticated_service()
 
     def verifyCredentials(self):
-        creds = functions.getFile(constants.YOUTUBE_CREDS_FILE)
+        self.creds = functions.getFile(constants.YOUTUBE_CREDS_FILE)
+        
+        if not self.creds:
+            # Compiled Credentials - if the application is bundled and the user is downloading an executable file, this should get the credentials no problem
+            try:
+                import creds
+                self.creds = {}
+                self.creds['client_id'] = creds.YOUTUBE_CLIENT_ID
+                self.creds['client_secret'] = creds.YOUTUBE_CLIENT_SECRET
+                self.apiKey = creds.YOUTUBE_API_KEY
+            except:
+                self.creds['client_id'] = dialogue.query('Required', 'Youtube Client ID: ', prePrint='Enter the Youtube Client ID for you app.  If you do not have a Client ID visit https://developers.google.com/youtube/registering_an_application')
 
-        if creds is not None and not creds['web']['authorized']:
-            creds = None
+                self.creds['client_secret'] = dialogue.query('Required', 'Youtube Client Secret: ', prePrint='Enter the Youtube Client Secret for you app.  If you do not have a Client Secret visit https://developers.google.com/youtube/registering_an_application')
 
-        if creds is not None and 'client_id' in creds['web']:
-            self.creds['client_id'] = creds['web']['client_id']
+                self.get_api_key()
+
+            self.creds['redirect_uris'] = constants.YOUTUBE_REDIRECT_URIS
+            self.creds['auth_uri'] = constants.YOUTUBE_AUTH_URI
+            self.creds['token_uri'] = constants.YOUTUBE_TOKEN_URI
+            self.creds['authorized'] = False
+
+            functions.saveFile(constants.YOUTUBE_CREDS_FILE, {'web': self.creds})
         else:
-            self.creds['client_id'] = dialogue.query('Required', 'Youtube Client ID: ', prePrint='Enter the Youtube Client ID for you app.  If you do not have a Client ID visit https://developers.google.com/youtube/registering_an_application')
+            try:
+                import creds
+                self.apiKey = creds.YOUTUBE_API_KEY
+            except:
+                self.get_api_key()
+            self.creds = self.creds['web']
 
-        if creds is not None and 'client_secret' in creds['web']:
-            self.creds['client_secret'] = creds['web']['client_secret']
-        else:
-            self.creds['client_secret'] = dialogue.query('Required', 'Youtube Client Secret: ', prePrint='Enter the Youtube Client Secret for you app.  If you do not have a Client Secret visit https://developers.google.com/youtube/registering_an_application')
-
-        self.creds['redirect_uris'] = constants.YOUTUBE_REDIRECT_URIS
-        self.creds['auth_uri'] = constants.YOUTUBE_AUTH_URI
-        self.creds['token_uri'] = constants.YOUTUBE_TOKEN_URI
-        self.creds['authorized'] = False
-
-        functions.saveFile(constants.YOUTUBE_CREDS_FILE, {'web': self.creds})
-
+    def get_api_key(self):
         api = functions.getFile(constants.YOUTUBE_API_FILE)
-
         if api is not None:
             self.apiKey = api
         else:
             self.apiKey = {'api_key': dialogue.query('Required', 'API Key: ', prePrint='Enter the API Key for you app.  If you do not have a API Key visit https://developers.google.com/youtube/v3/getting-started')}
-
         functions.saveFile(constants.YOUTUBE_API_FILE, self.apiKey)
 
     def getCategories(self):
@@ -123,20 +133,27 @@ class youtube:
             'key': self.apiKey,
         }
 
-        categories = requests.get(url, params=params).json()['items']
+        categories = requests.get(url, params=params).json()
+        if 'error' in categories:
+            logger.error('Could not get youtube categories.')
+            logger.warning('Using a default category for Gaming')
+            logger.warning('You can change this after you have uploaded in the Youtube Studio')
+            return 20
+        else:
+            categories = categories['items']
+            count = len(categories)
+            logger.info('We have found {} categories to choose from', count)
+            logger.info('Please choose the corresponding number to which category you would like to select')
+            
+            for i, item in enumerate(categories, 1):
+                logger.info('  {}) {}', i, item['snippet']['title'])
+            user_input = dialogue.query('Numeric', 'Category Number: ', min=1, max=count)
 
-        count = len(categories)
-        logger.info('We have found {} categories to choose from', count)
-        logger.info('Please choose the corresponding number to which category you would like to select')
-        
-        for i, item in enumerate(categories, 1):
-            logger.info('  {}) {}', i, item['snippet']['title'])
-        user_input = dialogue.query('Numeric', 'Category Number: ', min=1, max=count)
-
-        return categories[int(user_input)-1]['id']
+            return categories[int(user_input)-1]['id']
 
     def get_authenticated_service(self):
         logger.info('Confirming Youtube Credentials...')
+        flow_run = False
         flow = flow_from_clientsecrets(CLIENT_SECRETS_FILE,
             scope=YOUTUBE_UPLOAD_SCOPE,
             message=MISSING_CLIENT_SECRETS_MESSAGE)
@@ -144,17 +161,21 @@ class youtube:
         storage = Storage(constants.APPDATA_FOLDER+'/youtube_oauth2.json')
         credentials = storage.get()
 
-        if credentials is None or credentials.invalid:
+        if credentials is None or credentials.invalid or credentials.access_token_expired:
             credentials = run_flow(flow, storage)
+            flow_run = True
 
-        self.creds['authorized'] = True
-        functions.saveFile(constants.YOUTUBE_CREDS_FILE, {'web': self.creds})
+            self.creds['authorized'] = True
+            functions.saveFile(constants.YOUTUBE_CREDS_FILE, {'web': self.creds})
+
+        if flow_run:
+            logger.info('Restarting...')
+            os.execl(sys.executable, sys.executable, *sys.argv)
 
         return build(YOUTUBE_API_SERVICE_NAME, YOUTUBE_API_VERSION,
             http=credentials.authorize(httplib2.Http()), static_discovery=False)
 
     def upload(self, object):
-        #self.youtube = self.get_authenticated_service()
         logger.info('Preparing Upload...')
         try:
             self.initialize_upload(object)
@@ -180,22 +201,27 @@ class youtube:
             for keyword in object['meta']['keywords']:
                 description += f'#{keyword} '
 
-        body=dict(
-            snippet=dict(
-                title=object['meta']['title'],
-                description=description,
-                tags=object['meta']['keywords'],
-                categoryId=str(object['meta']['yt_category'])
-            ),
-            status=dict(
-                privacyStatus=object['meta']['privacy']
-            )
-        )
+        body = {
+            'snippet': {
+                'title': object['meta']['title'].replace('"', ''),
+                'description': description,
+                'tags': object['meta']['keywords'],
+                'categoryId': str(object['meta']['yt_category'])
+            },
+            'status': {
+                'privacyStatus': object['meta']['privacy']
+            }
+        }
+
+        if object['youtube']['unique']:
+            file = self.uploadLocation+object['video']['filename']
+        else:
+            file = self.genericUploadLocation+object['video']['filename']
 
         pbar = tqdm.tqdm(total=1024, desc='Uploading', unit='B', unit_scale=True, unit_divisor=1024)
 
         # Call the API's videos.insert method to create and upload the video.
-        media = MediaFileUploadWithProgressBar(self.uploadLocation+object['video']['filename'], chunksize=-1, resumable=True, progressBar=pbar)
+        media = MediaFileUploadWithProgressBar(file, chunksize=-1, resumable=True, progressBar=pbar)
         insert_request = youtube.videos().insert(
             part=",".join(body.keys()),
             body=body,

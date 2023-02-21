@@ -180,12 +180,11 @@ class ffmpeg:
         self.logger.info('Prepareing Transcode of {} video...', type)
         command = self.mpegPath+' -y '
         command += '-i "'+object['video']['stream']+'" '
-        
-        if type=='generic':
-            options = object['options']
-        else:
-            options = object[type]['options']
 
+        options = object['options']
+        if type != 'generic' and object[type]['unique']:
+            options = object[type]['options']
+        
         if options['overlay']:
             command += '-i "'+constants.APPDATA_FOLDER+'/'+options['overlay']['folder']+'/vid/'+options['overlay']['file']+'" '
 
