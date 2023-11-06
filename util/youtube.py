@@ -170,7 +170,7 @@ class youtube:
 
         if flow_run:
             logger.info('Restarting...')
-            os.execl(sys.executable, sys.executable, *sys.argv)
+            ##os.execl(sys.executable, sys.executable, *sys.argv)
 
         return build(YOUTUBE_API_SERVICE_NAME, YOUTUBE_API_VERSION,
             http=credentials.authorize(httplib2.Http()), static_discovery=False)
