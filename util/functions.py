@@ -224,10 +224,40 @@ def setOptions(video, yt_class):
                     logger.error('Could not create the description file')
                     logger.warning('Proceeding as no long description will be included')
 
-    logger.info('Enter keywords for this video, seperate them by , otherwise your going to have a whole mess of issues')
+    logger.debug('Checking existing saved keywords...')
+    file = constants.APPDATA_FOLDER+'/keywords.txt'
+    if os.path.exists(file):
+        user_input = dialogue.query('Options', 'You have saved keywords on file, would you like to use them, or edit it (USE/edit)? ', default='Use', options=['use', 'edit'], errorMsg='Please just answer with either use, or edit')
+        if user_input.casefold().startswith('use'):
+            keywords = getKeywords(file)
+        else:
+            subprocess.call(['open', '-e', file])
+            user_input = dialogue.query('Y/N', 'Are you happy with the saved keywords (Y/n)? ', default='Y')
+            logger.info('Make sure to save the file and close it before continueing')
+            user_input = dialogue.query('Y/N', 'Confirm that you saved the file (Y/n)? ', default='Y')
+            keywords = getKeywords(file)
+    
+    else:
+        logger.warning('No saved keywords')
+        if createFile(file):
+            subprocess.call(['open', '-e', file])
+            user_input = dialogue.query('Y/N', 'Are you happy with the saved keywords (Y/n)? ', default='Y')
+            logger.info('Make sure to save the file and close it before continueing')
+            user_input = dialogue.query('Y/N', 'Confirm that you saved the file (Y/n)? ', default='Y')
+            keywords = getKeywords(file)
+
+    logger.info('Existing Keywords: {}', keywords)
+    keywords = list(map(str.strip, keywords.split(',')))
+
+    logger.info('Enter additional keywords for this video, seperate them by , otherwise your going to have a whole mess of issues')
     user_input = dialogue.query('Text', 'Keywords: ')
     if user_input:
-        keywords = list(map(str.strip, user_input.split(',')))
+        add_keywords = list(map(str.strip, user_input.split(',')))
+        add_keywords.reverse()
+        if add_keywords:
+            for keyword in add_keywords:
+                if keyword not in keywords:
+                    keywords.insert(0, keyword)
 
     if yt_class is not None:
         youtube_category = yt_class.getCategories()
@@ -252,6 +282,17 @@ def getDesc(file):
         return data
     except:
         logger.error('Could not get the saved description')
+        return ''
+    
+def getKeywords(file):
+    logger.debug('Getting saved keywords...')
+    try:
+        with open(file) as infile:
+            data = infile.read()
+        logger.info('Loaded keywords')
+        return data
+    except:
+        logger.error('Could not get the saved keywords')
         return ''
 
 def prefs():
