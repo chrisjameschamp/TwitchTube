@@ -19,12 +19,6 @@ class ffmpeg:
         self.probePath = '"'+path+'/ffmpeg/ffprobe"'
 
     def setOptions(self, channel='generic', options=None):
-        if channel!='generic':
-            self.logger.info('Configuring video file for {}...', channel)
-        else:
-            self.logger.info('First we will configure the generic video file')
-            self.logger.info('We will configure the unique versions afterwards')
-
         highlight = None
         if options and 'highlight' in options and options['highlight']:
             self.logger.info('The generic version uses a highlight at the beginning starting at {} and ending at {}', functions.time(options['highlight']['start']), functions.time(options['highlight']['end']))
@@ -32,13 +26,13 @@ class ffmpeg:
             if user_input.casefold().startswith('y'):
                 highlight = options['highlight']
             else:
-                user_input = dialogue.query('Y/N', f'Would you like to include a highlight at the start of the {channel} video (y/N)? ', default='N')
+                user_input = dialogue.query('Y/N', f'Would you like to include a highlight at the start of the video (y/N)? ', default='N')
                 if user_input.casefold().startswith('y'):
                     start = dialogue.query('Time', 'Enter the time into the video where you want the highlight to start (12m4s): ')
                     end = dialogue.query('Time', 'Enter the time into the video where you want the highlight to stop (1m15s): ')
                     highlight = {'start': start, 'end': end}
         else:
-            user_input = dialogue.query('Y/N', f'Would you like to include a highlight at the start of the {channel} video (y/N)? ', default='N')
+            user_input = dialogue.query('Y/N', f'Would you like to include a highlight at the start of the video (y/N)? ', default='N')
             if user_input.casefold().startswith('y'):
                 start = dialogue.query('Time', 'Enter the time into the video where you want the highlight to start (12m4s): ')
                 end = dialogue.query('Time', 'Enter the time into the video where you want the highlight to stop (1m15s): ')
@@ -51,13 +45,13 @@ class ffmpeg:
             if user_input.casefold().startswith('y'):
                 trim = options['trim']
             else:
-                user_input = dialogue.query('Y/N', f'Would you like to change the in / out points of the {channel} video (y/N)? ', default='N')
+                user_input = dialogue.query('Y/N', f'Would you like to change the in / out points of the video (y/N)? ', default='N')
                 if user_input.casefold().startswith('y'):
                     start = dialogue.query('Time', 'Enter the time into the video where you want it to start (12m4s): ')
                     end = dialogue.query('Time', 'Enter the time into the video where you want it to end (1m15s): ')
                     trim = {'start': start, 'end': end}
         else:
-            user_input = dialogue.query('Y/N', f'Would you like to change the in / out points of the {channel} video (y/N)? ', default='N')
+            user_input = dialogue.query('Y/N', f'Would you like to change the in / out points of the video (y/N)? ', default='N')
             if user_input.casefold().startswith('y'):
                 start = dialogue.query('Time', 'Enter the time into the video where you want it to start (12m4s): ')
                 end = dialogue.query('Time', 'Enter the time into the video where you want it to end (1m15s): ')
@@ -70,13 +64,13 @@ class ffmpeg:
             if user_input.casefold().startswith('y'):
                 introVid = options['intro']
             else:
-                user_input = dialogue.query('Y/N', f'Would you like to include an intro video at the beginning of the {channel} video (Y/n)? ', default='Y')
+                user_input = dialogue.query('Y/N', f'Would you like to include an intro video at the beginning of the video (Y/n)? ', default='Y')
                 if user_input.casefold().startswith('y'):
-                    introVid = self.getVid(channel, 'intro')
+                    introVid = self.getVid('intro')
         else:
-            user_input = dialogue.query('Y/N', f'Would you like to include an intro video at the beginning of the {channel} video (Y/n)? ', default='Y')
+            user_input = dialogue.query('Y/N', f'Would you like to include an intro video at the beginning of the video (Y/n)? ', default='Y')
             if user_input.casefold().startswith('y'):
-                introVid = self.getVid(channel, 'intro')
+                introVid = self.getVid('intro')
 
         overlayVid = None
         if options and 'overlay' in options and options['overlay']:
@@ -85,13 +79,13 @@ class ffmpeg:
             if user_input.casefold().startswith('y'):
                 overlayVid = options['overlay']
             else:
-                user_input = dialogue.query('Y/N', f'Would you like to include a CTA / Subscribe overlay in the {channel} video (Y/n)? ', default='Y')
+                user_input = dialogue.query('Y/N', f'Would you like to include a CTA / Subscribe overlay in the video (Y/n)? ', default='Y')
                 if user_input.casefold().startswith('y'):
-                    overlayVid = self.getVid(channel, 'overlay')
+                    overlayVid = self.getVid('overlay')
         else:
-            user_input = dialogue.query('Y/N', f'Would you like to include a CTA / Subscribe overlay in the {channel} video (Y/n)? ', default='Y')
+            user_input = dialogue.query('Y/N', f'Would you like to include a CTA / Subscribe overlay in the video (Y/n)? ', default='Y')
             if user_input.casefold().startswith('y'):
-                overlayVid = self.getVid(channel, 'overlay')
+                overlayVid = self.getVid('overlay')
 
         endVid = None
         if options and 'endcard' in options and options['endcard']:
@@ -100,18 +94,18 @@ class ffmpeg:
             if user_input.casefold().startswith('y'):
                 endVid = options['endcard']
             else:
-                user_input = dialogue.query('Y/N', f'Would you like to include an endcard in the {channel} video (Y/n)? ', default='Y')
+                user_input = dialogue.query('Y/N', f'Would you like to include an endcard in the video (Y/n)? ', default='Y')
                 if user_input.casefold().startswith('y'):
-                    endVid = self.getVid(channel, 'end')
+                    endVid = self.getVid('end')
         else:
-            user_input = dialogue.query('Y/N', f'Would you like to include an endcard in the {channel} video (Y/n)? ', default='Y')
+            user_input = dialogue.query('Y/N', f'Would you like to include an endcard in the video (Y/n)? ', default='Y')
             if user_input.casefold().startswith('y'):
-                endVid = self.getVid(channel, 'end')
+                endVid = self.getVid('end')
 
         return {'intro': introVid, 'overlay': overlayVid, 'endcard': endVid, 'highlight': highlight, 'trim': trim}
 
-    def getVid(self, channel, type):
-        vid = functions.getFile(channel+'/'+type+'Vid')
+    def getVid(self, type):
+        vid = functions.getFile('generic/'+type+'Vid')
         if vid:
             if type=='intro':
                 self.logger.info('There is an {} video on file. "{}" with a defined length of {}s and an offset of {}s', type, vid['file'], vid['length'], vid['offset'])
@@ -126,16 +120,16 @@ class ffmpeg:
                 return False
 
             if user_input.casefold().startswith('n'):
-                self.logger.info('Deleting existing {} {} video...', channel, type)
+                self.logger.info('Deleting existing {} video...', type)
                 try:
-                    os.remove(constants.APPDATA_FOLDER+'/'+channel+'/vid/'+vid['file'])
+                    os.remove(constants.APPDATA_FOLDER+'/generic/vid/'+vid['file'])
                 except:
-                    self.logger.error('Could not delete existing {} {} video...', channel, type)
-                self.logger.info('Deleting {} {} video settings...', channel, type)
+                    self.logger.error('Could not delete existing {} video...', type)
+                self.logger.info('Deleting {} video settings...', type)
                 try:
-                    os.remove(constants.APPDATA_FOLDER+'/'+channel+'/'+type+'Vid.json')
+                    os.remove(constants.APPDATA_FOLDER+'/generic/'+type+'Vid.json')
                 except:
-                    self.logger.error('Could not delete {} {} video settings...', channel, type)
+                    self.logger.error('Could not delete {} video settings...', type)
                 vid = None
             else:
                 return vid
@@ -145,27 +139,27 @@ class ffmpeg:
         if file_path:
             self.logger.info('Selected File: {}', file_path)
             file_name = os.path.split(file_path)[1]
-            if not functions.copy(file_path, constants.APPDATA_FOLDER+'/'+channel+'/vid/'+file_name):
+            if not functions.copy(file_path, constants.APPDATA_FOLDER+'/generic/vid/'+file_name):
                 self.logger.error('Selected file could not be copied')
                 self.logger.warning('Proceeding as no {} video will be included', type)
                 return False
             else:
                 if type=='intro':
-                    vid = {'file': file_name, 'length': 0, 'offset': 0, 'folder': channel}
-                    functions.saveFile(''+channel+'/'+type+'Vid', vid)
+                    vid = {'file': file_name, 'length': 0, 'offset': 0, 'folder': 'generic'}
+                    functions.saveFile('generic/'+type+'Vid', vid)
                     vid['length'] = dialogue.query('Numeric', 'What is the required length of the intro video in seconds? This essnetially would be the amount of seconds before an outro transition starts, if there is any. If left blank the intro video and main video will start at the same time (Default: 0) ', default='0')
                     vid['offset'] = dialogue.query('Numeric', 'What is the offset at the beginning of the intro video to accomdate transitions in seconds? This is only used if a highlight is played before the intro video (Default: 0) ', default=0)
-                    functions.saveFile(''+channel+'/'+type+'Vid', vid)
+                    functions.saveFile('generic/'+type+'Vid', vid)
                 elif type=='end':
-                    vid = {'file': file_name, 'offset': 0, 'folder': channel}
-                    functions.saveFile(''+channel+'/'+type+'Vid', vid)
+                    vid = {'file': file_name, 'offset': 0, 'folder': 'generic'}
+                    functions.saveFile('generic/'+type+'Vid', vid)
                     vid['offset'] = dialogue.query('Numeric', 'What is the offset at the beginning of the endcard video to accomdate transitions in seconds? This is only used if there is a transition to the endcard (Default: 0) ', default=0)
-                    functions.saveFile(''+channel+'/'+type+'Vid', vid)
+                    functions.saveFile('generic/'+type+'Vid', vid)
                 elif type=='overlay':
-                    vid = {'file': file_name, 'start': 15, 'folder': channel}
-                    functions.saveFile(''+channel+'/'+type+'Vid', vid)
+                    vid = {'file': file_name, 'start': 15, 'folder': 'generic'}
+                    functions.saveFile('generic/'+type+'Vid', vid)
                     vid['start'] = dialogue.query('Numeric', 'How many seconds into the video would you like the overlay video to play (Default: 15) ', default='15')
-                    functions.saveFile(''+channel+'/'+type+'Vid', vid)
+                    functions.saveFile('generic/'+type+'Vid', vid)
                 else:
                     return False
         else:

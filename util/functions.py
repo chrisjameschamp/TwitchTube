@@ -1,6 +1,7 @@
 import logging
 import json
 import os
+import pyperclip
 import re
 import requests
 import subprocess
@@ -179,13 +180,11 @@ def isValidTimeFormat(s):
         return True
     return False
 
-def setOptions(video, yt_class):
+def setOptions(video):
     title = ''
     shortDesc = ''
     description = ''
     keywords = []
-    youtube_category = ''
-    privacy = 'private'
     logger.info('The title of this video from Twitch is "{}"', video['title'])
     user_input = dialogue.query('Y/N', 'Do you wish to keep that title (Y/n)? ', default='Y')
     if user_input.casefold().startswith('y'):
@@ -196,33 +195,32 @@ def setOptions(video, yt_class):
 
     shortDesc = dialogue.query('Text', 'Enter a breif description for this specific video: ')
 
-    if yt_class is not None:
-        logger.info('Do you want to include a longer description below the breif description?')
-        user_input = dialogue.query('Y/N', 'This will only be used on youtube (Y/n) ', default='Y')
-        if user_input.casefold().startswith('y'):
-            logger.debug('Checking existing saved description...')
-            file = constants.APPDATA_FOLDER+'/desc.txt'
-            if os.path.exists(file):
-                user_input = dialogue.query('Options', 'You have a long description on file, would you like to use it, or view / edit it (USE/edit)? ', default='Use', options=['use', 'edit', 'view'], errorMsg='Please just answer with either use, edit, or view')
-                if user_input.casefold().startswith('use'):
-                    description = getDesc(file)
-                else:
-                    subprocess.call(['open', '-e', file])
-                    user_input = dialogue.query('Y/N', 'Are you happy with the long desciprtion (Y/n)? ', default='Y')
-                    logger.info('Make sure to save the file and close it before continueing')
-                    user_input = dialogue.query('Y/N', 'Confirm that you saved the file (Y/n)? ', default='Y')
-                    description = getDesc(file)
+    logger.info('Do you want to include a longer description below the breif description?')
+    user_input = dialogue.query('Y/N', 'This will only be used on youtube (Y/n) ', default='Y')
+    if user_input.casefold().startswith('y'):
+        logger.debug('Checking existing saved description...')
+        file = constants.APPDATA_FOLDER+'/desc.txt'
+        if os.path.exists(file):
+            user_input = dialogue.query('Options', 'You have a long description on file, would you like to use it, or view / edit it (USE/edit)? ', default='Use', options=['use', 'edit', 'view'], errorMsg='Please just answer with either use, edit, or view')
+            if user_input.casefold().startswith('use'):
+                description = getDesc(file)
             else:
-                logger.warning('No saved description')
-                if createFile(file):
-                    subprocess.call(['open', '-e', file])
-                    user_input = dialogue.query('Y/N', 'Are you happy with the long desciprtion (Y/n)? ', default='Y')
-                    logger.info('Make sure to save the file and close it before continueing')
-                    user_input = dialogue.query('Y/N', 'Confirm that you saved the file (Y/n)? ', default='Y')
-                    description = getDesc(file)
-                else:
-                    logger.error('Could not create the description file')
-                    logger.warning('Proceeding as no long description will be included')
+                subprocess.call(['open', '-e', file])
+                user_input = dialogue.query('Y/N', 'Are you happy with the long desciprtion (Y/n)? ', default='Y')
+                logger.info('Make sure to save the file and close it before continueing')
+                user_input = dialogue.query('Y/N', 'Confirm that you saved the file (Y/n)? ', default='Y')
+                description = getDesc(file)
+        else:
+            logger.warning('No saved description')
+            if createFile(file):
+                subprocess.call(['open', '-e', file])
+                user_input = dialogue.query('Y/N', 'Are you happy with the long desciprtion (Y/n)? ', default='Y')
+                logger.info('Make sure to save the file and close it before continueing')
+                user_input = dialogue.query('Y/N', 'Confirm that you saved the file (Y/n)? ', default='Y')
+                description = getDesc(file)
+            else:
+                logger.error('Could not create the description file')
+                logger.warning('Proceeding as no long description will be included')
 
     logger.debug('Checking existing saved keywords...')
     file = constants.APPDATA_FOLDER+'/keywords.txt'
@@ -259,10 +257,7 @@ def setOptions(video, yt_class):
                 if keyword not in keywords:
                     keywords.insert(0, keyword)
 
-    if yt_class is not None:
-        youtube_category = yt_class.getCategories()
-
-    return {'title': title, 'shortDesc': shortDesc, 'description': description, 'keywords': keywords, 'yt_category': youtube_category, 'privacy': privacy}
+    return {'title': title, 'shortDesc': shortDesc, 'description': description, 'keywords': keywords}
 
 def createFile(file):
     try:
@@ -294,21 +289,6 @@ def getKeywords(file):
     except:
         logger.error('Could not get the saved keywords')
         return ''
-
-def prefs():
-    prefs = getFile(constants.PREFS_FILE)
-    if prefs is not None:
-        user_input = dialogue.query('Y/N', 'Would you like to edit your preferences before we begin (y/N)? ', default='N')
-        if user_input.casefold().startswith('n'):
-            return prefs
-    else:
-        prefs = {}
-
-    prefs = settings('youtube', prefs)
-
-    saveFile(constants.PREFS_FILE, prefs)
-
-    return prefs
 
 def settings(channel, prefs):
     if channel in prefs:
@@ -377,6 +357,45 @@ def settings(channel, prefs):
     else:
         logger.info('Preferences set to not upload to {}', channel)
     return prefs
+
+def uploadVideo(object):
+    logger.info('Thanks to recent changes to Google\'s Terms and Policies we can no longer upload automagically to Youtube.  However we have made step by step instructions based on your video that should make uploading your video to Youtube as straightforward as possible')
+    logger.info('To get started head over to https://studio.youtube.com/ and click the button to upload a new video.')
+    dialogue.query('Enter', 'Press any key to continue...')
+    logger.info('First we must copy the rendered video somewhere on your computer so that you can easily access it and select it for upload.')
+    logger.info('Please select the destination folder...')
+    folder_path = selectDestFolder()
+    filename, ext = os.path.splitext(object['video']['filename'])
+    copy(constants.RENDER_LOCATION+'generic/'+object['video']['filename'], folder_path+'/'+filename+'_gen'+ext, chunk_size=1024)
+    logger.info('Now on Youtube, press the {} button and navigate to where you just saved the video file and select it.', 'Select File')
+    dialogue.query('Enter', 'Press any key to continue...')
+    logger.info('Your video should now be uploading.  While it uploads we can fill out the details step by step.')
+    pyperclip.copy(object['meta']['title'])
+    logger.info('The {} has been copied to your clipboard, paste it into the {} field', 'Title', 'Title')
+    dialogue.query('Enter', 'Press any key to continue...')
+    description = ''
+    if object['meta']['shortDesc']:
+        description += object['meta']['shortDesc']
+        if object['meta']['description']:
+            description += '\n\n▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n\n'
+            
+    if object['meta']['description']:
+        description += object['meta']['description']
+        if object['meta']['keywords']:
+            description += '\n\n▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n\n'
+
+    if object['meta']['keywords']:
+        for keyword in object['meta']['keywords']:
+            description += f'#{keyword} '
+    pyperclip.copy(description)
+    logger.info('The {} has been copied to your clipboard, paste it into the {} field', 'Description', 'Description')
+    dialogue.query('Enter', 'Press any key to continue...')
+    keywords = ", ".join(object['meta']['keywords'])
+    pyperclip.copy(keywords)
+    logger.info('The {} has been copied to your clipboard, paste it into the {} field', 'Keywords', 'Tags')
+    dialogue.query('Enter', 'Press any key to continue...')
+    logger.info('All set!')
+    logger.info('Once the video has finished uploading you can delete the video file you copied to your computer, or keep it for whatever you may want to use it for.')
 
 def cleanUp():
     logger.debug('Cleaning Up and Removing Previous Renders...')
